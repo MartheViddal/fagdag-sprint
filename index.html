@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overlev sprinten — Skanska Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #141720;
+  --surface2: #1a1e27;
+  --border: #252b38;
+  --border2: #2e3545;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #6ea8fe;
+  --accent2: #93bcfe;
+  --green: #10b981;
+  --red: #ef4444;
+  --blue: #6ea8fe;
+  --purple: #a78bfa;
+  --orange: #f97316;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Intro ── */
+#intro {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 24px; padding: 40px;
+}
+#intro h1 {
+  font-size: 48px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; line-height: 1.1;
+}
+#intro p { font-size: 16px; color: var(--muted); text-align: center; max-width: 480px; line-height: 1.7; }
+#intro .rules {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: 480px; width: 100%;
+}
+#intro .rule { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #94a3b8; }
+#intro .rule span { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+#name-input {
+  background: var(--surface2); border: 1.5px solid var(--border2);
+  border-radius: 10px; padding: 12px 18px;
+  font-size: 15px; color: var(--text);
+  font-family: 'Syne', sans-serif;
+  outline: none; width: 280px; text-align: center;
+  transition: border-color 0.15s;
+}
+#name-input:focus { border-color: var(--accent); }
+#start-btn {
+  background: var(--accent); border: none; border-radius: 10px;
+  padding: 13px 40px; font-size: 15px; font-weight: 700;
+  color: #0a0f1a; cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  transition: transform 0.1s, background 0.1s;
+}
+#start-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+/* ── Hoved-layout ── */
+#game { display: none; height: 100vh; flex-direction: column; }
+#game.show { display: flex; }
+
+/* Topbar */
+#topbar {
+  height: 48px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 16px; flex-shrink: 0;
+}
+#topbar-logo { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; }
+#timer-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+#timer-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+#timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 700; color: var(--accent);
+  transition: color 0.3s; min-width: 60px; text-align: right;
+}
+#timer.warn { color: var(--accent); }
+#timer.danger { color: var(--red); animation: pulse-timer 0.5s ease-in-out infinite alternate; }
+@keyframes pulse-timer { from { opacity: 1; } to { opacity: 0.5; } }
+#score-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; color: var(--muted);
+  background: var(--surface2); padding: 4px 10px; border-radius: 6px;
+}
+#score-display span { color: var(--accent); font-weight: 700; }
+
+/* Tabs */
+#tabs {
+  display: flex; gap: 0; justify-content: center;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0; padding: 0 20px;
+}
+.tab {
+  flex: 1; max-width: 220px;
+  padding: 14px 18px; font-size: 15px; font-weight: 700;
+  color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+  transition: all 0.15s; position: relative; display: flex;
+  align-items: center; justify-content: center; gap: 8px;
+  user-select: none;
+}
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface2); }
+.tab .badge {
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { transform: scale(1.15); box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+}
+.tab .badge.hidden { display: none; }
+.channel-item .ch-badge {
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+/* Panel */
+#panels { flex: 1; overflow: hidden; position: relative; }
+.panel { display: none; height: 100%; overflow-y: auto; }
+.panel.active { display: flex; flex-direction: column; }
+
+/* ── Innboks ── */
+#inbox-wrap { display: grid; grid-template-columns: 280px 1fr; height: 100%; }
+#email-list-pane {
+  border-right: 1px solid var(--border);
+  overflow-y: auto; background: var(--surface);
+}
+#email-list-pane .pane-header {
+  padding: 12px 14px; font-size: 11px; font-weight: 700;
+  color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  background: var(--surface); z-index: 1;
+}
+.email-item {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.1s;
+}
+.email-item:hover { background: var(--surface2); }
+.email-item.selected { background: var(--surface2); border-left: 2px solid var(--accent); }
+.email-item.unread .email-sender { font-weight: 700; color: var(--text); }
+.email-item.unread .email-subject { color: var(--text); }
+.email-sender { font-size: 12px; color: var(--muted); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+.email-sender .email-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.email-sender .email-date { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; margin-left: auto; }
+.email-subject { font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unread-dot { width: 6px; height: 6px; background: var(--blue); border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+#email-body-pane { padding: 24px 28px; overflow-y: auto; }
+#email-body-pane .empty-state { color: var(--muted); font-size: 14px; text-align: center; padding: 60px 0; }
+#email-meta { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+#email-meta .subject { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+#email-meta .from { font-size: 13px; color: var(--muted); }
+#email-body-text { font-size: 14px; line-height: 1.8; color: #cbd5e1; }
+#email-points-note {
+  margin-top: 16px; padding: 10px 14px;
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 8px; font-size: 12px; color: var(--green);
+  display: none;
+}
+
+/* ── Chat ── */
+#chat-wrap { display: grid; grid-template-columns: 200px 1fr; height: 100%; }
+#chat-channels {
+  border-right: 1px solid var(--border);
+  background: var(--surface); padding: 12px 0;
+}
+#chat-channels .ch-header {
+  padding: 4px 14px 10px; font-size: 11px; font-weight: 700;
+  color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.channel-item {
+  padding: 7px 14px; font-size: 13px; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: background 0.1s; border-radius: 4px; margin: 0 6px 2px;
+}
+.channel-item:hover { background: var(--surface2); color: var(--text); }
+.channel-item.active { background: var(--surface2); color: var(--text); }
+.channel-item .ch-badge {
+  background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px; margin-left: auto;
+}
+
+#chat-main { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+#chat-header {
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+}
+#chat-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
+.chat-msg { display: flex; gap: 10px; align-items: flex-start; animation: slideIn 0.2s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+.chat-avatar {
+  width: 30px; height: 30px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.chat-content { flex: 1; }
+.chat-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.chat-time { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-left: 6px; font-weight: 400; }
+.chat-text { font-size: 13px; color: #cbd5e1; line-height: 1.5; }
+.chat-replies { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.chat-reply-btn {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 6px 12px; font-size: 12px;
+  color: var(--muted); cursor: pointer; text-align: left;
+  font-family: 'Syne', sans-serif; transition: all 0.1s;
+}
+.chat-reply-btn:hover { border-color: var(--accent); color: var(--accent); }
+.chat-reply-btn.selected { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.08); }
+.chat-reply-btn.bad { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.08); }
+.chat-typing { color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 0; }
+
+#chat-input-area {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+#chat-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--text);
+  font-family: 'Syne', sans-serif; outline: none;
+}
+#chat-quick-replies {
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(26,30,39,0.96), rgba(20,23,32,0.98));
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.25);
+}
+#chat-quick-replies.hidden { display: none; }
+.quick-reply-panel { display: flex; flex-direction: column; gap: 10px; }
+.quick-reply-kicker {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+  color: var(--accent); text-transform: uppercase;
+}
+.quick-reply-context {
+  border: 1px solid var(--border2); border-left: 3px solid var(--accent);
+  background: var(--surface2); border-radius: 10px;
+  padding: 10px 12px; color: #cbd5e1;
+}
+.quick-reply-context .qr-author { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.quick-reply-context .qr-text { font-size: 12px; line-height: 1.45; color: #94a3b8; }
+.quick-reply-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.quick-reply {
+  background: var(--surface); border: 1.5px solid var(--accent);
+  border-radius: 10px; padding: 10px 12px;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: all 0.15s; text-align: left; line-height: 1.35;
+}
+.quick-reply:hover { border-color: var(--accent2); color: var(--accent2); transform: translateY(-1px); }
+.quick-reply.ignore { }
+.quick-reply.ignore:hover { }
+.chat-msg.awaiting-reply {
+  background: rgba(110,168,254,0.08);
+  border: 1px solid rgba(110,168,254,0.35);
+  border-radius: 12px;
+  padding: 10px;
+  margin: -4px 0;
+}
+.chat-msg.awaiting-reply .chat-text::after { content: ''; }
+.quick-reply-panel + .quick-reply-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.quick-reply-count {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* ── Sprint-board ── */
+#sprint-wrap { padding: 20px 24px; max-width: 900px; }
+#sprint-wrap h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+#sprint-wrap .sprint-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.cap-bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.cap-bar-wrap label { font-size: 12px; color: var(--muted); }
+.cap-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.cap-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s, background 0.3s; }
+.cap-bar-fill.warn { background: var(--accent); }
+.cap-bar-fill.over { background: var(--red); }
+.cap-days-label { font-size: 12px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; min-width: 70px; }
+.sprint-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.sprint-col {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; min-height: 300px;
+}
+.sprint-col.drag-over { border-color: var(--accent); background: rgba(245,158,11,0.04); }
+.sprint-col { transition: border-color 0.15s, background 0.15s; }
+.sprint-col .sprint-drop { min-height: 240px; }
+.sprint-col-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;
+}
+.sprint-drop { min-height: 240px; display: flex; flex-direction: column; gap: 6px; }
+.feature-card {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 12px;
+  cursor: grab; display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 8px; transition: border-color 0.15s;
+  font-family: 'Syne', sans-serif;
+}
+.feature-card:hover { border-color: var(--accent); }
+.feature-card.dragging { opacity: 0.3; }
+.feature-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.feature-desc { font-size: 11px; color: var(--muted); }
+.feature-tag {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--surface); color: var(--muted);
+  border: 1px solid var(--border2);
+}
+.tag-low, .tag-mid, .tag-high { background: var(--surface); color: var(--muted); }
+.tag-high { color: var(--red); border-color: rgba(239,68,68,0.35); }
+.sprint-hint { font-size: 12px; color: var(--muted); text-align: center; padding: 30px 0; font-style: italic; }
+#deliver-btn {
+  width: 100%; padding: 12px; background: var(--accent);
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+  color: #0a0f1a; cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: transform 0.1s, background 0.1s;
+}
+#deliver-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+/* ── Telefon-popup ── */
+#phone-popup {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+}
+#phone-popup.show { display: flex; }
+#phone-screen {
+  background: #111827;
+  border-radius: 40px;
+  width: 220px;
+  padding: 32px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 0 0 8px #1f2937, 0 0 60px rgba(0,0,0,0.8);
+  animation: phone-ring 0.5s ease-in-out infinite alternate;
+}
+@keyframes phone-ring {
+  from { transform: rotate(-2deg); }
+  to   { transform: rotate(2deg); }
+}
+#phone-screen.sms-mode { animation: phone-bounce 0.4s ease; }
+@keyframes phone-bounce {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.phone-icon { font-size: 42px; }
+.phone-caller { font-size: 18px; font-weight: 700; color: #fff; text-align: center; }
+.phone-subtitle { font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.4; }
+.phone-actions { display: flex; gap: 32px; margin-top: 8px; }
+.phone-btn {
+  width: 54px; height: 54px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; transition: transform 0.1s;
+}
+.phone-btn:hover { transform: scale(1.1); }
+.phone-btn.answer { background: #10b981; }
+.phone-btn.dismiss { background: #ef4444; }
+.phone-btn.choice {
+  width: auto; min-width: 92px; height: auto; border-radius: 999px;
+  padding: 12px 16px; gap: 6px;
+  font-size: 13px; font-weight: 700; color: #fff;
+  font-family: 'Syne', sans-serif;
+}
+.phone-btn.choice.answer { color: #052e1d; }
+#phone-dismiss-text {
+  font-size: 12px; color: #6b7280;
+  cursor: pointer; text-decoration: underline;
+}
+
+/* ── Mobilvarsler ── */
+#notifications {
+  position: fixed; top: 60px; right: 16px; z-index: 500;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.notif {
+  background: var(--surface); border: 1.5px solid var(--accent);
+  border-radius: 12px; padding: 14px 16px;
+  width: 300px; animation: notif-in 0.4s cubic-bezier(0.34,1.3,0.64,1);
+  pointer-events: all; cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(107,138,252,0.2);
+}
+.notif:hover { border-color: var(--accent2); transform: scale(1.02); transition: transform 0.1s; }
+@keyframes notif-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.notif.removing { animation: notif-out 0.3s ease forwards; }
+@keyframes notif-out {
+  to { opacity: 0; transform: translateX(120%); }
+}
+.notif-app { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+.notif-app-dot { width: 8px; height: 8px; border-radius: 50%; }
+.notif-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.notif-text { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+
+/* ── Sluttskjerm ── */
+#end-screen {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: var(--bg); overflow-y: auto;
+  flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 40px 20px;
+}
+#end-screen.show { display: flex; animation: fadeIn 0.5s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.end-scenario {
+  max-width: 600px; width: 100%; text-align: center; margin-bottom: 32px;
+}
+.scenario-emoji { font-size: 64px; margin-bottom: 16px; }
+.scenario-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.scenario-text { font-size: 15px; color: #94a3b8; line-height: 1.7; margin-bottom: 16px; }
+.scenario-score {
+  font-size: 48px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent); margin-bottom: 8px;
+}
+.scenario-score-label { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+#choice-summary {
+  max-width: 760px; width: 100%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; margin-bottom: 24px;
+}
+.summary-header {
+  padding: 14px 20px; background: var(--surface2);
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.summary-section {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.summary-section:last-child { border-bottom: none; }
+.summary-title {
+  font-size: 13px; font-weight: 800; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.summary-text { font-size: 13px; line-height: 1.65; color: #cbd5e1; }
+.summary-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.summary-item {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface2); font-size: 13px;
+}
+.summary-item small { color: var(--muted); display: block; margin-top: 2px; font-size: 11px; }
+.summary-points {
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); white-space: nowrap;
+}
+.summary-good { color: var(--green); }
+.summary-warn { color: var(--orange); }
+.summary-bad { color: var(--red); }
+.summary-muted { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Intro -->
+<div id="intro">
+  <div style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.15em;text-transform:uppercase;opacity:0.7;">Skanska Digital · Fagdag</div>
+  <h1>Overlev<br>sprinten</h1>
+  <p>Det er mandag morgen. Du er produktansvarlig i Skanska Digital. Om 20 minutter starter sprint-planleggingsmøtet — og du har ennå ikke bestemt deg for hva teamet skal jobbe med denne uken.</p>
+  <div class="rules">
+    <div class="rule"><span>📋</span> Du må planlegge og levere sprinten før tiden går ut</div>
+    <div class="rule"><span>⏱️</span> Du har 20 minutter</div>
+    <div class="rule"><span>🏆</span> Du får poeng basert på valgene du tar underveis — og ser hele teamets score når du er ferdig</div>
+  </div>
+  <input id="name-input" type="text" placeholder="Hva heter du?" autocomplete="off" />
+  <button id="start-btn">Start dagen →</button>
+</div>
+
+<!-- Spill -->
+<div id="game">
+  <div id="topbar">
+    <div id="topbar-logo">SKANSKA DIGITAL</div>
+    <div style="font-size:12px;color:var(--muted);margin-left:8px;" id="player-label"></div>
+    <div id="score-display">Poeng: <span id="score-val">0</span></div>
+    <div id="timer-wrap">
+      <div id="timer-label">TID IGJEN</div>
+      <div id="timer">20:00</div>
+    </div>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" data-panel="inbox" onclick="switchTab('inbox')">
+      📧 Innboks <div class="badge" id="inbox-badge">0</div>
+    </div>
+    <div class="tab" data-panel="chat" onclick="switchTab('chat')">
+      💬 Slack <div class="badge hidden" id="chat-badge">0</div>
+    </div>
+    <div class="tab" data-panel="sprint" onclick="switchTab('sprint')">
+      📋 Sprint
+    </div>
+  </div>
+
+  <div id="panels">
+
+    <!-- Innboks -->
+    <div class="panel active" id="panel-inbox">
+      <div id="inbox-wrap">
+        <div id="email-list-pane">
+          <div class="pane-header">Innboks</div>
+          <div id="email-list"></div>
+        </div>
+        <div id="email-body-pane">
+          <div class="empty-state">← Velg en epost å lese</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="panel" id="panel-chat">
+      <div id="chat-wrap">
+        <div id="chat-channels">
+          <div class="ch-header">Kanaler</div>
+          <div class="channel-item active" data-ch="dev" onclick="switchChannel('dev')">
+            # dev-teamet <span class="ch-badge hidden" id="dev-badge"></span>
+          </div>
+          <div class="channel-item" data-ch="general" onclick="switchChannel('general')">
+            # general <span class="ch-badge hidden" id="general-badge"></span>
+          </div>
+          <div class="channel-item" data-ch="dm" onclick="switchChannel('dm')">
+            🔒 Anders <span class="ch-badge hidden" id="dm-badge"></span>
+          </div>
+        </div>
+        <div id="chat-main">
+          <div id="chat-header"># dev-teamet</div>
+          <div id="chat-messages"></div>
+          <div id="chat-quick-replies"></div>
+          <div id="chat-input-area" style="display:none;">
+            <input id="chat-input" placeholder="Velg et svar over, eller ignorer..." disabled style="display:none;" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint -->
+    <div class="panel" id="panel-sprint">
+      <div id="sprint-wrap">
+        <h2>Sprint-planlegging</h2>
+        <p class="sprint-sub">Du har <strong>10 dager kapasitet</strong>. Dra features fra backlog inn i sprinten.</p>
+        <div class="cap-bar-wrap">
+          <label>Kapasitet</label>
+          <div class="cap-bar"><div class="cap-bar-fill" id="cap-fill" style="width:0%"></div></div>
+          <div class="cap-days-label" id="cap-days">0 / 10 d</div>
+        </div>
+        <div class="sprint-cols">
+          <div class="sprint-col">
+            <div class="sprint-col-title">Backlog</div>
+            <div class="sprint-drop" id="backlog-drop"></div>
+          </div>
+          <div class="sprint-col">
+            <div class="sprint-col-title">Sprint</div>
+            <div class="sprint-drop" id="sprint-drop">
+              <div class="sprint-hint" id="sprint-hint">Dra features hit</div>
+            </div>
+          </div>
+        </div>
+        <button id="deliver-btn" onclick="deliverSprint()">Lever sprint →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobilvarsler -->
+<div id="notifications"></div>
+
+<!-- Telefon-popup -->
+<div id="phone-popup">
+  <div id="phone-screen">
+    <div class="phone-icon" id="phone-icon">📱</div>
+    <div class="phone-caller" id="phone-caller"></div>
+    <div class="phone-subtitle" id="phone-subtitle"></div>
+    <div class="phone-actions" id="phone-actions"></div>
+  </div>
+  <div id="phone-dismiss-text">Legg bort telefonen</div>
+</div>
+
+<!-- Sluttskjerm -->
+<div id="end-screen">
+  <div class="end-scenario">
+    <div class="scenario-emoji" id="sc-emoji"></div>
+    <div class="scenario-title" id="sc-title"></div>
+    <div class="scenario-text" id="sc-text"></div>
+    <div class="scenario-score" id="sc-score"></div>
+    <div class="scenario-score-label">poeng</div>
+  </div>
+  <div id="choice-summary">
+    <div class="summary-header">Hvorfor fikk du dette scenariet?</div>
+    <div id="summary-rows"></div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);text-align:center;max-width:600px;line-height:1.6;">Poengene og scenariet er basert på hva du leste, hvordan du svarte, hvilke avbrudd du fulgte opp og hva du faktisk la inn i sprinten.</p>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// KONFIGURASJON
+// ═══════════════════════════════════════
+const GOOGLE_SHEET_URL = ''; // ikke i bruk
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQE-Nl5xiRShAmkzcx3M2SqyBD1z6R-dazz7XidanMpC89So164B0v9c8QB15wM32aQkkbjuG82xiWu/pub?output=csv';
+const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeYWRz0hEu-F9NcD89oqpuiNK4Dr7QnokQX2PGR1MV20-reNg/formResponse';
+const FORM_NAVN = 'entry.851006693';
+const FORM_POENG = 'entry.1178480301';
+const GAME_DURATION = 20 * 60; // sekunder
+
+// ═══════════════════════════════════════
+// INNHOLD
+// ═══════════════════════════════════════
+
+const EMAILS = [
+  {
+    id: 'e1', from: 'Anders Bakke', fromRole: 'Anleggsleder B-14',
+    subject: 'Re: Appen', date: '14. jan, 08:33',
+    ts: -30, unread: false, old: true, points: 10, relevant: true,
+    body: 'Hei. Vi har hatt noen problemer med appen den siste tiden. Opplasting henger seg av og til, og et par av karene har bare gitt opp og skriver på papir igjen. Ikke noe akutt, men tenkte dere burde vite om det. Ha en fin dag.'
+  },
+  {
+    id: 'e2', from: 'Kantina', fromRole: 'intern@skanska.no',
+    subject: '🌮 Taco-fredag er tilbake!', date: '23. jan, 11:02',
+    unread: false, old: true, points: 0, relevant: false,
+    body: 'Hei alle sammen! Vi er glade for å melde at Taco-fredag er tilbake i kantina fra denne fredagen. Påmelding innen onsdag kl. 12. Glutenfritt alternativ tilgjengelig.'
+  },
+  {
+    id: 'e3', from: 'IT-support', fromRole: 'it-support@skanska.no',
+    subject: 'Adobe CC — lisens utløper snart', date: '28. jan, 09:14',
+    unread: false, old: true, points: 0, relevant: false,
+    body: 'Hei Sara. Din lisens for Adobe Creative Cloud utløper om 14 dager (11. februar). Vennligst kontakt IT-support for fornyelse, eller videresend til din nærmeste leder for godkjenning.'
+  },
+  {
+    id: 'e4', from: 'Kari Nordahl', fromRole: 'HMS-ansvarlig B-14',
+    subject: 'Varslingsmodulen — oppfølging', date: '2. feb, 14:37',
+    unread: false, old: true, points: 15, relevant: true,
+    body: 'Hei Sara. Lurer på om dere har sett på varslingsmodulen? Jeg sendte inn en sak for to måneder siden om at varsler ikke alltid kommer frem. Fikk beskjed om at det var lavt prioritert. Men vi hadde en situasjon forrige uke der en av anleggslederne ikke fikk varselet om en endret rutine. Det gikk bra denne gangen, men det er ikke godt nok. Ville bare nevne det igjen.'
+  },
+  {
+    id: 'e5', from: 'HR — Skanska Norge', fromRole: 'hr@skanska.no',
+    subject: 'Påminnelse: Medarbeidersamtaler februar', date: '2. feb, 08:00',
+    unread: false, old: true, points: 0, relevant: false,
+    body: 'Hei. Dette er en påminnelse om at medarbeidersamtaler skal gjennomføres innen utgangen av februar. Skjema og veiledning ligger på intranett under Personal → Samtaler → 2025.'
+  },
+  {
+    id: 'e6', from: 'Lena Dahl', fromRole: 'UX Designer',
+    subject: 'Figma-filer oppdatert', date: '5. feb, 10:22',
+    unread: false, old: true, points: 5, relevant: true,
+    body: 'Hei! Har lagt inn oppdaterte designfiler for HMS-skjema v3 i Figma. Gi meg tilbakemelding når du har tid, særlig på onboarding-flyten på side 4. Ingen hastverk, men ville gjerne ha input før neste sprint. 🙂'
+  },
+  {
+    id: 'e7', from: 'Facilities', fromRole: 'facilities@skanska.no',
+    subject: 'Renhold 3. etasje — tirsdag', date: 'I dag, 07:44',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Det vil være renhold i 3. etasje tirsdag morgen mellom 07:00 og 09:00. Vennligst rydd skrivebordene og sett stoler opp på pulten før du går mandag.'
+  },
+  {
+    id: 'e8', from: 'Thomas Hagen', fromRole: 'Senior Utvikler',
+    subject: 'Statusoppdatering og sprint-spørsmål', date: 'For 3 dager siden, 16:22',
+    unread: false, old: true, points: 20, relevant: true,
+    body: 'Hei! Kort statusoppdatering fra meg.\n\nMinnebruk: Jeg fant noe rart i loggen — opplastingsmodulen bruker unormalt mye minne på store JPEG-filer. Ikke kritisk ennå men bør sees på snart.\n\nPDF-eksport: Holder på med denne. Vil bare gi beskjed om at den er mer kompleks enn estimert. Rapportmodellen den er avhengig av er ikke ferdig, så realistisk sett tror jeg det blir 6-7 dager, ikke 4 som står i backloggen. Ta gjerne høyde for det i sprint-planleggingen.\n\nSi ifra hvis du vil ha en prat!'
+  },
+  {
+    id: 'e9', from: 'Direktør Nilsen', fromRole: 'Direktør, Skanska Digital',
+    subject: 'Fredag — styredemo', date: 'I dag, 08:02',
+    unread: true, old: false, points: 10, relevant: true,
+    body: 'Sara — kort reminder om fredag. CFO og to styremedlemmer kommer for en gjennomgang. De vil se konkrete fremskritt siden sist kvartal, spesielt rundt rapporteringsmodulen som ble nevnt i Q3-rapporten. Jeg regner med dere har noe å vise. Si ifra hvis det er noe jeg bør vite om på forhånd, helst innen i morgen.'
+  },
+  {
+    id: 'e10', from: 'Anders Bakke', fromRole: 'Anleggsleder B-14',
+    subject: 'Re: Re: Appen', date: 'I dag, 08:59',
+    unread: true, old: false, points: 20, relevant: true,
+    body: 'Hei. Prøvde å laste opp bilder fra dagens inspeksjon men det funka ikke igjen. Endte opp med å sende på epost til kontoret, de printer det ut. Vet ikke om det kom frem. Har møte med Arbeidstilsynet på torsdag og trenger at alt er dokumentert ordentlig. Bare så dere vet det.'
+  },
+  {
+    id: 'e11', from: 'Petter Aas', fromRole: 'Kollega, UX-teamet',
+    subject: 'Lunsj i dag?', date: 'I dag, 11:02',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Hei! Blir det lunsj i dag? Vi tenkte å gå til det nye stedet nede i gata. Si ifra! 🍜'
+  },
+  {
+    id: 'e12', from: 'GitHub', fromRole: 'noreply@github.com',
+    subject: '[skanska-digital/hms-app] PR #247: Fix upload timeout', date: 'I dag, 07:33',
+    unread: true, old: false, points: 15, relevant: true,
+    body: 'Thomas Hagen opened pull request #247: Fix upload timeout for large JPEG files in the attachment module.\n\nThis PR addresses the memory issue discovered in the upload module. Fixes the timeout that users have been experiencing when uploading images larger than 5MB.\n\nReview requested: Sara Bakke'
+  },
+  {
+    id: 'e13', from: 'Jira', hiddenUntilNotification: true, fromRole: 'jira@skanska-digital.atlassian.net',
+    subject: '[HMS-APP-412] Ny ticket: Brukere kan ikke logge inn etter oppdatering', date: 'I dag, 08:14',
+    unread: true, old: false, points: 20, relevant: true,
+    body: 'En ny ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Brukere kan ikke logge inn etter siste oppdatering\nPrioritet: Høy\nRapportert av: Systemet (5 feilmeldinger siste time)\n\nBeskrivelse: Siden siste deploy kl. 07:00 har vi registrert 5 innloggingsfeil fra ulike brukere. Feilen ser ut til å ramme brukere med eldre app-versjoner. Thomas er satt som ansvarlig.\n\nSe ticket: HMS-APP-412'
+  },
+  {
+    id: 'e14', from: 'Morten Lie', fromRole: 'Prosjektleder, Skanska Bygg',
+    subject: 'HMS-appen — tilgang for nye prosjekter', date: 'I dag, 09:12',
+    unread: true, old: false, points: 5, relevant: false,
+    body: 'Hei Sara. Vi starter opp tre nye prosjekter i Bergen neste måned og trenger at HMS-appen er satt opp for disse. Kan noen i ditt team hjelpe med onboarding? Vi snakker om ca 40 nye brukere. Ta gjerne kontakt, eller si hvem jeg skal snakke med. Mvh Morten'
+  },
+  {
+    id: 'e15', from: 'Lena Dahl', fromRole: 'UX Designer',
+    subject: 'Trenger godkjenning på designendring', date: 'I dag, 09:55',
+    unread: true, old: false, points: 10, relevant: true,
+    body: 'Hei! Jeg har gjort en liten endring på avviksskjemaet basert på tilbakemeldingene fra Kari. Flyttet "Alvorlighetsgrad"-feltet høyere opp og gjort det obligatorisk. Trenger din godkjenning før jeg sender til Thomas for implementering. Er det greit at jeg går videre med dette?'
+  },
+  {
+    id: 'e16', from: 'Sikkerhetsvarsel', fromRole: 'security@skanska-digital.com',
+    subject: '⚠️ Uvanlig påloggingsaktivitet oppdaget', date: 'I dag, 10:03',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Vi har oppdaget et påloggingsforsøk på din konto fra en ukjent enhet.\n\nEnhet: Windows PC\nPlassering: Warszawa, Polen\nTidspunkt: 10:01\n\nHvis dette var deg kan du ignorere denne meldingen. Hvis ikke, endre passordet ditt umiddelbart via lenken under.\n\n[Endre passord nå]'
+  },
+  {
+    id: 'e17', from: 'Slack', fromRole: 'noreply@slack.com',
+    subject: 'Du er nevnt i #general', date: 'I dag, 10:22',
+    unread: true, old: false, points: 0, relevant: false,
+    body: '@sara — kan du bekrefte at du kommer på fredagslunsjen? Vi bestiller mat kl. 11. 🍕'
+  },
+  {
+    id: 'e24', from: 'Jira', fromRole: 'jira@skanska-digital.atlassian.net',
+    subject: '[HMS-APP-389] Kommentar: Offline-modus', date: 'For 3 uker siden, 14:22',
+    unread: false, old: true, points: 20, relevant: true,
+    body: 'Thomas Hagen kommenterte på ticket HMS-APP-389: Offline-modus\n\n"Har sett nærmere på dette. Offline-støtte er betydelig mer arbeid enn estimert — vi trenger en egen sync-logikk, konfliktshåndtering når to brukere redigerer samme skjema offline, og lokal database. Trenger en separat planleggingsøkt før vi setter dette i en sprint. Vil ikke at noen skal anta at dette er en liten ting."\n\nTicket er merket: Trenger avklaring'
+  },
+  {
+    id: 'e19', from: 'LinkedIn', fromRole: 'notifications@linkedin.com',
+    subject: 'Thomas Hagen godtok kontaktforespørselen din', date: 'I dag, 08:01',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Thomas Hagen har godtatt kontaktforespørselen din på LinkedIn. Dere har nå 14 felles forbindelser.\n\nVil du sende en melding til Thomas?'
+  },
+  {
+    id: 'e20', from: 'Vipps', fromRole: 'kvittering@vipps.no',
+    subject: 'Kvittering — Kiwi Majorstuen 89 kr', date: 'I dag, 07:44',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Du har betalt 89 kr til Kiwi Majorstuen. Takk for at du bruker Vipps!'
+  },
+  {
+    id: 'e21', from: 'Ole Kristian Berg', fromRole: 'Sommervikar, Skanska',
+    subject: 'Spørsmål om sommerjobb', date: 'I dag, 09:33',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Hei Sara! Jeg søkte på sommerjobb hos dere for noen uker siden og lurer på om det er mulig å få en tilbakemelding? Har ikke hørt noe og fristen for andre tilbud nærmer seg. Håper det er greit at jeg tar kontakt direkte. Mvh Ole Kristian'
+  },
+  {
+    id: 'e22', from: 'Bring', fromRole: 'sporing@bring.no',
+    subject: 'Pakken din er klar til henting', date: 'I dag, 10:31',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Pakke 123456789 er klar til henting på Rema 1000 Frogner. Hentefrist: 5 dager.'
+  },
+  {
+    id: 'e23', from: 'Per Ivar Johansen', fromRole: 'Salg, Visma',
+    subject: 'Kan vi ta 15 min denne uken?', date: 'I dag, 08:52',
+    unread: true, old: false, points: 0, relevant: false,
+    body: 'Hei Sara! Jeg jobber med Visma og har sett at Skanska bruker noen eldre systemer for prosjektstyring. Vi har en ny løsning som mange i bygg og anlegg har hatt god erfaring med. Kan vi ta 15 minutter denne uken? Ingen forpliktelser!'
+  },
+  {
+    id: 'e18', from: 'Jira', hiddenUntilNotification: true, fromRole: 'jira@skanska-digital.atlassian.net',
+    subject: '[HMS-APP-413] Ny ticket: Eksporter-knapp mangler på iPad', date: 'I dag, 10:44',
+    unread: true, old: false, points: 5, relevant: true,
+    body: 'En ny ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Eksporter-knapp vises ikke på iPad\nPrioritet: Middels\nRapportert av: Kari Nordahl\n\nBeskrivelse: På iPad mini vises ikke eksporter-knappen i rapport-visningen. Problemet er reproduserbart. Kari bruker iPad på byggeplassen daglig.\n\nSe ticket: HMS-APP-413'
+  }
+];
+
+const CHAT_MESSAGES = {
+  dev: [
+    {
+      id: 'cm0', author: 'Thomas', avatar: 'TH', color: '#3b82f6', time: '08:48',
+      text: 'Hei! Ser at det er en ny Jira-ticket på innloggingsfeil etter deploy. Vet ikke om det er noe vi har gjort eller om det er en edge case. Undersøker.',
+      requiresReply: false
+    },
+    {
+      id: 'cm1', author: 'Thomas', avatar: 'TH', color: '#3b82f6', time: '09:05',
+      text: 'God morgen alle! Jeg er litt i tvil om vi rekker PDF-eksporten denne sprinten. Er det absolutt nødvendig til fredag?',
+      requiresReply: true, replyDeadline: 8 * 60,
+      replies: [
+        { text: 'Ikke krev det til fredag — fokuser på bugfiks og bildevedlegg', points: 15, good: true },
+        { text: 'Ja, Nilsen trenger det til styredemo. Prioriter det høyest!', points: -10, good: false },
+        { text: 'Hva er status på minnelekkasjen du fant?', points: 10, good: true },
+        { text: 'Hva med offline-modus — er det realistisk denne sprinten?', points: 20, good: true }
+      ]
+    },
+    {
+      id: 'cm2', author: 'Lena', avatar: 'LD', color: '#f59e0b', time: '09:45',
+      text: 'Jeg er bekymret for at vi lanserer HMS-skjemaet uten å ha testet det med faktiske anleggsledere. Kan vi utsette en sprint?',
+      requiresReply: true, replyDeadline: 14 * 60,
+      replies: [
+        { text: 'Enig — la oss planlegge en brukertest før lansering', points: 15, good: true },
+        { text: 'Vi har ikke tid nå. Vi lanserer og samler feedback etterpå.', points: -5, good: false },
+        { text: 'Kan vi gjøre en rask test med noen på bygget?', points: 10, good: true }
+      ]
+    }
+  ],
+  general: [
+    {
+      id: 'cm3', author: 'HR', avatar: 'HR', color: '#8b5cf6', time: '09:02',
+      text: '📢 Påminnelse: Alle teamledere må levere kapasitetsrapport for Q1 innen fredag kl. 12.',
+      requiresReply: false
+    },
+    {
+      id: 'cm6', author: 'Morten', avatar: 'ML', color: '#10b981', time: '09:30',
+      text: 'Hei team! Har sendt mail til Sara om onboarding for Bergen-prosjektene. Håper det lar seg ordne raskt! 🏗️',
+      requiresReply: false
+    },
+    {
+      id: 'cm7', author: 'Lena', avatar: 'LD', color: '#f59e0b', time: '10:05',
+      text: 'Har noen sett på Jira-ticketen om iPad-problemet? Kari er ganske frustrert. Hun bruker den til daglig.',
+      requiresReply: false
+    },
+    {
+      id: 'cm9', author: 'Petter', avatar: 'PA', color: '#64748b', time: '10:08',
+      text: 'Er det noen som vet hva passordet til kontoret WiFi er? Glemt det igjen 😅',
+      requiresReply: false
+    },
+    {
+      id: 'cm10', author: 'HR', avatar: 'HR', color: '#8b5cf6', time: '10:35',
+      text: '🎂 Husk at det er Morten sin bursdag i dag! Kake på kjøkkenet fra kl. 14.',
+      requiresReply: false
+    },
+    {
+      id: 'cm11', author: 'Petter', avatar: 'PA', color: '#64748b', time: '10:48',
+      text: 'Noen som skal på lunsj? 🍜',
+      requiresReply: false
+    },
+    {
+      id: 'cm4', author: 'Direktør Nilsen', avatar: 'DN', color: '#ef4444', time: '10:15',
+      text: 'Sara — har du sett mailen min? Trenger bekreftelse på at PDF-eksport er klar til fredag. Dette er viktig for styret.',
+      requiresReply: true, replyDeadline: 16 * 60,
+      replies: [
+        { text: 'Vi prioriterer stabilitet og brukerproblemer fremfor demo-features', points: 10, good: true },
+        { text: 'Ja, PDF er klar til fredag! 👍', points: -15, good: false },
+        { text: 'Kan vi vise noe annet til styret som er mer ferdig?', points: 12, good: true }
+      ]
+    }
+  ],
+  dm: [
+    {
+      id: 'cm5', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', time: '09:10',
+      text: 'Hei Sara. Unnskylder at jeg maser, men har du lest mailen min? Vi har Arbeidstilsynet på torsdag og appen funker ikke. Hvis dette ikke er fikset er jeg nødt til å dokumentere alt manuelt i natt.',
+      requiresReply: true, replyDeadline: 10 * 60,
+      replies: [
+        { text: 'Vi prioriterer dette! Bildevedlegg og stabil opplasting kommer denne sprinten.', points: 20, good: true },
+        { text: 'Beklager, vi har mange ting på gang. Prøv å dokumentere manuelt foreløpig.', points: -20, good: false },
+        { text: 'Kan du sende meg loggfiler? Thomas trenger å se på dette.', points: 10, good: true }
+      ]
+    },
+    {
+      id: 'cm8', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', time: '10:30',
+      text: 'Hei igjen. Prøvde å logge inn nå og fikk en feilmelding. Er det noe dere holder på med?',
+      requiresReply: false
+    }
+  ]
+};
+
+const REAL_DAYS = { f1:2, f2:2, f3:1, f4:3, f5:7, f6:8, f7:3, f8:3, f9:2, f10:1, f11:2 };
+
+const FEATURES = [
+  { id: 'f1', name: 'Bildevedlegg i HMS-rapport', desc: 'Last opp bilder direkte fra app', days: 2, tag: 'low', tagLabel: '2d', points: 30 },
+  { id: 'f2', name: 'Autosave i skjema', desc: 'Lagre automatisk hvert 30. sek', days: 2, tag: 'low', tagLabel: '2d', points: 18 },
+  { id: 'f3', name: 'Fiks minnelekkasje (upload)', desc: 'Kritisk bug i opplastingsmodul', days: 1, tag: 'low', tagLabel: '1d', points: 35 },
+  { id: 'f4', name: 'Fikse varslingsmodul', desc: 'Varsler som ikke alltid kommer frem', days: 3, tag: 'mid', tagLabel: '3d', points: 20 },
+  { id: 'f5', name: 'PDF-eksport rapport', desc: 'Eksporter HMS-rapport som PDF', days: 4, tag: 'mid', tagLabel: '4d', points: 10 },
+  { id: 'f6', name: 'Offline-modus', desc: 'Full funksjonalitet uten nett', days: 3, tag: 'mid', tagLabel: '3d', points: 5 },
+  { id: 'f7', name: 'Redesign dashboard', desc: 'Ny visuell profil på hjemskjerm', days: 3, tag: 'mid', tagLabel: '3d', points: 5 },
+  { id: 'f8', name: 'Push-varsler', desc: 'Varsle om nye avvik og frister', days: 3, tag: 'mid', tagLabel: '3d', points: 8 },
+  // Skjulte Jira-saker som dukker opp underveis via varsel/e-post.
+  { id: 'f9', name: 'Fiks innloggingsfeil etter deploy', desc: 'Eldre app-versjoner får ikke logget inn', days: 2, tag: 'high', tagLabel: '2d', points: 35, hidden: true },
+  { id: 'f10', name: 'Fiks eksporter-knapp på iPad', desc: 'Eksporter-knappen mangler i rapport-visning', days: 1, tag: 'mid', tagLabel: '1d', points: 12, hidden: true },
+  { id: 'f11', name: 'Øk serverkapasitet ved peak-belastning', desc: 'Kritisk feil når mange bruker appen samtidig', days: 2, tag: 'high', tagLabel: '2d', points: 30, hidden: true }
+];
+
+const NOTIFICATIONS = [
+  // Første minutt — smell av gårde
+  { time: 0.3*60, app: 'Slack',    color: '#3b82f6', title: 'Thomas',    text: 'God morgen! Er du inne?', channel: 'dev', chatMsg: true },
+  { time: 0.6*60, app: 'Email', color: '#f59e0b', title: 'Jira', text: 'HMS-APP-412: Innloggingsfeil', panel: 'inbox', emailSubject: '[HMS-APP-412] Innloggingsfeil etter deploy — Høy prioritet', emailPoints: 15, emailRelevant: true, emailBody: 'En automatisk feilrapport er generert.\n\nFeil: Brukere kan ikke logge inn etter siste deploy (07:00).\nAntall feil siste time: 5\nAlvorlighetsgrad: Høy\n\nThomas Hagen er satt som ansvarlig. Se ticket HMS-APP-412 for detaljer.' },
+  { time: 1*60,   app: 'SMS',      color: '#10b981', title: 'Anders',   text: 'Fikk du mailen min? Litt urgent 🙏' },
+  { time: 1.5*60, app: 'Slack',    color: '#f59e0b', title: 'HR',       text: 'Kapasitetsrapport Q1 — frist fredag kl. 12', channel: 'general', chatMsg: true },
+
+  // 2-4 min
+  { time: 2.5*60, app: 'Email', color: '#f59e0b', title: 'Lena Dahl', text: 'Trenger godkjenning på designendring', panel: 'inbox', emailSubject: 'Godkjenning — designendring HMS-skjema', emailPoints: 10, emailRelevant: true, emailBody: 'Hei! Jeg har gjort en liten endring på avviksskjemaet basert på Kari sine tilbakemeldinger. Har flyttet Alvorlighetsgrad-feltet høyere opp og gjort det obligatorisk. Trenger din godkjenning før jeg sender til Thomas. Er det greit at jeg går videre?' },
+  { time: 3*60,   app: 'Slack',    color: '#3b82f6', title: '#dev-teamet',    text: 'Thomas: Er noen inne og kan svare?', channel: 'dev' },
+  { time: 3.5*60, app: 'Vipps',   color: '#f97316', title: 'Kvittering',     text: 'Du har betalt 89 kr til Kiwi Majorstuen', panel: null },
+  { time: 4*60,   app: 'Telefon', isCall: true, color: '#64748b', title: 'Ukjent',        text: 'Hei! Er dette Sara fra Skanska? Jeg ringer angående tilbud på kontormøbler.', panel: null },
+
+  // 5-8 min
+  { time: 5*60, app: 'Email', color: '#ef4444', title: 'Direktør Nilsen', text: 'Sara — har du sett mailen min?', panel: 'inbox', emailSubject: 'Re: Fredag — styredemo', emailPoints: 5, emailRelevant: false, emailBody: 'Sara, jeg har ikke hørt fra deg angående fredagens demo. CFO og styremedlemmene er bekreftet. Jeg trenger en bekreftelse på at PDF-eksporten er klar. Svar meg innen i dag.' },
+  { time: 5.5*60, app: 'Email',   color: '#f59e0b', title: 'Jira',           text: 'HMS-APP-413: Eksporter-knapp mangler på iPad', panel: 'inbox', reveal: 'f10', emailSubject: '[HMS-APP-413] Ny ticket: Eksporter-knapp mangler på iPad', emailBody: 'En ny ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Eksporter-knapp vises ikke på iPad\nPrioritet: Middels\n\nBeskrivelse: På iPad mini vises ikke eksporter-knappen i rapport-visningen.\n\nSe ticket: HMS-APP-413' },
+  { time: 6*60,   app: 'LinkedIn', color: '#3b82f6', title: 'Ny tilkobling',  text: 'Thomas Hagen godtok kontaktforespørselen din', panel: null },
+  { time: 6.5*60, app: 'Slack',   color: '#f59e0b', title: 'Morten',       text: 'Hei! Har sendt mail om Bergen-prosjektene', channel: 'general', chatMsg: true },
+  { time: 7*60,   app: 'Slack',   color: '#f59e0b', title: '#general',       text: 'Lena: Har noen sett på iPad-ticketen? Kari er frustrert.', channel: 'general' },
+  { time: 7.5*60, app: 'SMS',     color: '#ef4444', title: 'Ukjent nummer',  text: 'Sara, dette er kona til Anders. Han er på legevakten. Ikke alvorlig, men han klarer ikke jobb i morgen.', channel: null },
+  { time: 8*60, app: 'Email', color: '#f59e0b', title: 'GitHub', text: 'PR #247: Fix upload timeout', panel: 'inbox', emailSubject: '[hms-app] PR #247: Fix upload timeout for JPEG', emailPoints: 15, emailRelevant: true, emailBody: 'Thomas Hagen opened pull request #247: Fix upload timeout for large JPEG files.\n\nThis PR fixes the memory issue in the upload module. Users experiencing timeouts when uploading images larger than 5MB should no longer be affected.\n\nReview requested: Sara Bakke' },
+
+  // 9-13 min
+  { time: 9*60,   app: 'Slack',   color: '#f59e0b', title: 'Petter',       text: 'Noen som vet WiFi-passordet? Glemt det igjen', channel: 'general', chatMsg: true },
+  { time: 9.5*60, app: 'GitHub',  color: '#8b5cf6', title: 'PR #247',        text: 'Thomas Hagen: Klar til merge ved godkjenning', panel: 'sprint' },
+  { time: 10*60,  app: 'Bring',   color: '#ef4444', title: 'Pakke klar',     text: 'Pakken din kan hentes på Rema 1000 Frogner — 5 dagers frist', panel: null },
+  { time: 10.5*60,app: 'Slack',   color: '#8b5cf6', title: 'HR',       text: 'Det er Morten sin bursdag! Kake på kjøkkenet fra kl. 14 🎂', channel: 'general', chatMsg: true },
+  { time: 11*60, app: 'Email', color: '#f59e0b', title: 'Direktør Nilsen', text: 'Har ikke hørt fra deg om fredagsdemoen', panel: 'inbox', emailSubject: 'Re: Re: Fredag — styredemo', emailPoints: 0, emailRelevant: false, emailBody: 'Sara. Jeg har ikke hørt fra deg. Er alt OK? Møtet er om 3 dager og jeg vil ikke bli overrasket. Ring meg.' },
+  { time: 12*60,  app: 'SMS',     color: '#10b981', title: 'Anders Bakke',   text: 'Prøvde å logge inn nå og fikk feilmelding. Hva skjer?', channel: 'dm' },
+  { time: 12.5*60,app: 'Slack',   color: '#f59e0b', title: 'Petter',       text: 'Lunsj? 🍜', channel: 'general', chatMsg: true },
+  { time: 13*60,  app: 'Telefon', isCall: true, color: '#64748b', title: 'Mamma',          text: 'Hei! Det er mamma. Ikke noe hast, jeg lurte bare på om du kan ringe meg senere.', panel: null },
+
+  // 14-17 min
+  { time: 10.2*60,app: 'Email',   color: '#f59e0b', title: 'Jira',           text: 'HMS-APP-414: Serverkapasitet — feil ved peak-belastning. Haster!', panel: 'inbox', reveal: 'f11', emailSubject: '[HMS-APP-414] Ny ticket: Serverkapasitet — feil ved peak-belastning', emailBody: 'En ny kritisk ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Serverkapasitet — feil ved peak-belastning\nPrioritet: Kritisk\n\nBeskrivelse: Appen feiler når mange brukere laster opp samtidig.\n\nSe ticket: HMS-APP-414' },
+  { time: 14*60, app: 'Email', color: '#f59e0b', title: 'Jira', text: 'HMS-APP-389 Offline-modus', panel: 'inbox', emailSubject: '[HMS-APP-389] Kommentar: Offline-modus trenger avklaring', emailPoints: 10, emailRelevant: true, emailBody: 'Thomas Hagen kommenterte:\n\n"Offline-modus er undervurdert. Vi trenger sync-logikk, konfliktshåndtering og lokal database. Estimerer 3-4 uker, ikke en sprint. Må avklares før vi setter det i backlog."\n\nTicket: HMS-APP-389' },
+  { time: 15*60,  app: 'Slack',   color: '#3b82f6', title: 'Thomas',    text: 'Klar for sprint-møtet snart?', channel: 'dev', chatMsg: true },
+  { time: 16*60, app: 'Email', color: '#f59e0b', title: 'Visma Salg', text: 'Kan vi ta 15 min?', panel: 'inbox', emailSubject: 'Introduksjon — ny løsning for Skanska', emailPoints: 0, emailRelevant: false, emailBody: 'Hei Sara! Jeg jobber med Visma og har sett at Skanska bruker noen eldre systemer for prosjektstyring. Kan vi ta 15 minutter denne uken? Ingen forpliktelser! Ser frem til å høre fra deg.' },
+  { time: 16.5*60,app: 'SMS',     color: '#10b981', title: 'Anders',   text: 'Sara? Er det noen som ser på dette?' },
+
+  // Siste 2 min
+  { time: 18*60,  app: 'Alarm',   color: '#ef4444', title: '⚠️ 2 minutter igjen!', text: 'Sprint-planleggingsmøtet starter om 2 minutter. Husk å levere!', panel: 'sprint' }
+];
+
+const SCENARIOS = [
+  {
+    id: 'hero',
+    emoji: '🦸',
+    title: 'Helten',
+    text: 'Du valgte riktig. De mest akutte brukerproblemene ble håndtert: dokumentasjon i felt, opplasting/minnelekkasje og kritiske driftsfeil. Anders klarte Arbeidstilsyns-inspeksjonen, Thomas slapp en urealistisk sprint, og teamet fikk en vanlig tirsdag der ting fungerte.',
+    condition: s => s.sprintFeatures.includes('f1') && s.sprintFeatures.includes('f3') && (s.sprintFeatures.includes('f9') || s.sprintFeatures.includes('f11')) && !s.overCapacity && s.chatScore >= 20
+  },
+  {
+    id: 'politician',
+    emoji: '🎭',
+    title: 'Politikeren',
+    text: 'PDF-eksporten ble levert til fredag. Styredemo gikk knirkefritt. Direktør Nilsen var fornøyd. Mandag krasjet appen for alle brukere på grunn av minnelekkasjen. Anders ringte. Arbeidstilsynet ringte. Det ble en lang uke.',
+    condition: s => {
+      const realTotal = s.sprintFeatures.reduce((sum, fid) => sum + (REAL_DAYS[fid] || 0), 0);
+      return s.sprintFeatures.includes('f5') && !s.sprintFeatures.includes('f3') && !s.sprintFeatures.includes('f9') && realTotal <= 10;
+    }
+  },
+  {
+    id: 'burnout',
+    emoji: '🔥',
+    title: 'Burnout',
+    text: 'Du prøvde å levere alt. Thomas jobbet til midnatt fire dager på rad. PDF-eksporten tok dobbelt så lang tid som planlagt — akkurat som han advarte om i mailen. Fredag sendte Thomas en sykemelding. Neste sprint starter med halv kapasitet og ingen som snakker med hverandre.',
+    condition: s => {
+      const realTotal = s.sprintFeatures.reduce((sum, fid) => sum + (REAL_DAYS[fid] || 0), 0);
+      return realTotal > 10;
+    }
+  },
+  {
+    id: 'nearMiss',
+    emoji: '⚠️',
+    title: 'Nesten-ulykken',
+    text: 'Varslingsmodulen ble aldri fikset. En anleggsleder på et annet prosjekt fikk ikke beskjed om endret rutine i et høyrisikoområde. Det gikk bra denne gangen. Kari sendte deg en e-post. Du åpnet den ikke.',
+    condition: s => !s.sprintFeatures.includes('f4') && !s.readEmails.includes('e4') && s.chatScore < 10
+  },
+  {
+    id: 'symptomFixer',
+    emoji: '🔔',
+    title: 'Symptomfikseren',
+    text: 'Du valgte å gjøre varsler mer synlige, men rotårsaken ble stående. Teamet fikk flere ping, men brukerne fikk fortsatt ustabil opplasting, innlogging eller manglende dokumentasjon. Det føltes produktivt — helt til feltet ringte igjen.',
+    condition: s => s.features.includes('f8') && !s.sprintFeatures.includes('f4') && (!s.features.includes('f3') || !s.features.includes('f9'))
+  },
+  {
+    id: 'realistic',
+    emoji: '☁️',
+    title: 'Den realistiske',
+    text: 'Noen er litt misfornøyde. Anders fikk delvis hjelp, og noen av de viktigste signalene ble fanget opp. Nilsen ble ikke helt fornøyd. Thomas leverte uten å knekke helt. Kari venter fortsatt på noe. Sara sier: "Velkommen til hverdagen min." Du lærte noe i dag.',
+    condition: s => true // fallback
+  }
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state = {
+  playerName: '',
+  score: 0,
+  timeLeft: GAME_DURATION,
+  timerInterval: null,
+  notifIndex: 0,
+  readEmails: [],
+  readEmailKeys: [],
+  notifiedEmailKeys: [],
+  notifiedTicketKeys: [],
+  revealedFeatureIds: [],
+  animatedFeatureIds: [],
+  extraMessageSeq: 0,
+  emailSeq: 0,
+  chatSeq: 0,
+  chatReplies: {},
+  chatScore: 0,
+  sprintFeatures: [],
+  sprintDays: 0,
+  overCapacity: false,
+  gameOver: false,
+  currentEmail: null,
+  currentChannel: null
+};
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('name-input').addEventListener('keydown', e => { if(e.key === 'Enter') startGame(); });
+
+function startGame() {
+  const name = document.getElementById('name-input').value.trim() || 'Spiller';
+  state.playerName = name;
+  document.getElementById('player-label').textContent = name;
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('game').classList.add('show');
+  buildEmailList();
+  state.currentChannel = 'dev';
+  buildChatChannel('dev');
+  buildSprintBoard();
+
+  // Sett korrekt innboks-badge
+  updateInboxBadge();
+
+  startTimer();
+  scheduleNotifications();
+
+  scheduleChatMessages();
+  scheduleExtraMessages();
+}
+
+// ═══════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════
+function startTimer() {
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimerDisplay();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      endGame(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer');
+  const m = Math.floor(state.timeLeft / 60);
+  const s = state.timeLeft % 60;
+  el.textContent = m + ':' + String(s).padStart(2, '0');
+  el.className = state.timeLeft < 120 ? 'danger' : state.timeLeft < 300 ? 'warn' : '';
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(panel) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.panel === panel));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + panel));
+
+  if (panel === 'inbox') {
+    // Ikke nullstill ulest-teller bare fordi fanen åpnes. Den skal reflektere faktisk lest-status.
+    updateInboxBadge();
+  }
+  if (panel === 'chat') {
+    // Tøm kun chat-fane-badge, ikke kanal-badges
+    const cb = document.getElementById('chat-badge');
+    if (cb) { cb.classList.add('hidden'); cb.textContent = '0'; }
+  }
+}
+
+// ═══════════════════════════════════════
+// INNBOKS
+// ═══════════════════════════════════════
+function updateInboxBadge() {
+  const badge = document.getElementById('inbox-badge');
+  if (!badge) return;
+
+  // Sørg for at tidligere leste saker aldri telles som ulest igjen etter re-render/nytt varsel.
+  EMAILS.forEach(e => {
+    if (wasEmailRead(e)) e.unread = false;
+  });
+
+  const unread = EMAILS.filter(e => !e.hiddenUntilNotification && e.unread && !wasEmailRead(e)).length;
+  badge.textContent = unread;
+  badge.classList.toggle('hidden', unread === 0);
+}
+
+
+function markEmailRead(emailOrId) {
+  const id = typeof emailOrId === 'string' ? emailOrId : (emailOrId && emailOrId.id);
+  if (!id) return null;
+
+  const email = EMAILS.find(e => e.id === id);
+  if (!email) return null;
+
+  const ticket = getTicketKey((email.subject || '') + ' ' + (email.body || ''));
+  rememberEmailRead(email);
+
+  // Marker også eventuelle duplikater med samme Jira-ticket som lest, slik at samme sak ikke lyser ulest igjen.
+  EMAILS.forEach(e => {
+    const sameId = e.id === id;
+    const sameTicket = ticket && ((e.subject && e.subject.includes(ticket)) || (e.body && e.body.includes(ticket)));
+    if (sameId || sameTicket) {
+      e.unread = false;
+      rememberEmailRead(e);
+    }
+  });
+
+  // Rebygg listen fra sann datamodell. Dette fjerner både bold-stil og blå prikk robust.
+  buildEmailList();
+  updateInboxBadge();
+  return email;
+}
+
+function upsertEmailListItem(email) {
+  const list = document.getElementById('email-list');
+  if (!list || !email) return;
+
+  const oldItem = document.getElementById('email-item-' + email.id);
+  if (oldItem) oldItem.remove();
+
+  const item = document.createElement('div');
+  item.className = 'email-item' + (email.unread ? ' unread' : '');
+  item.id = 'email-item-' + email.id;
+  item.style.animation = 'notif-in 0.3s ease';
+  item.innerHTML =
+    '<div class="email-sender">' +
+      (email.unread ? '<div class="unread-dot" style="flex-shrink:0;"></div>' : '') +
+      '<span class="email-name">' + (email.from || '') + '</span>' +
+      '<span class="email-date" style="color:var(--accent);">' + (email.date || 'Nå') + '</span>' +
+    '</div>' +
+    '<div class="email-subject" style="color:var(--text);">' + (email.subject || '') + '</div>';
+  item.addEventListener('click', () => openEmail(email, item));
+  list.insertBefore(item, list.firstChild);
+}
+
+function getTicketKey(text) {
+  const match = String(text || '').match(/HMS-APP-\d+/);
+  return match ? match[0] : null;
+}
+
+function getEmailReadKey(email) {
+  if (!email) return null;
+  const ticket = getTicketKey((email.subject || '') + ' ' + (email.body || ''));
+  return ticket || email.id || email.subject || null;
+}
+
+function rememberEmailRead(email) {
+  if (!email) return;
+  const key = getEmailReadKey(email);
+  if (email.id && !state.readEmails.includes(email.id)) state.readEmails.push(email.id);
+  if (key && !state.readEmailKeys.includes(key)) state.readEmailKeys.push(key);
+}
+
+function wasEmailRead(email) {
+  if (!email) return false;
+  const key = getEmailReadKey(email);
+  return (email.id && state.readEmails.includes(email.id)) ||
+         (key && state.readEmailKeys.includes(key));
+}
+
+function rememberEmailNotified(emailOrKey) {
+  const key = typeof emailOrKey === 'string' ? emailOrKey : getEmailReadKey(emailOrKey);
+  if (key && !state.notifiedEmailKeys.includes(key)) state.notifiedEmailKeys.push(key);
+}
+
+function hasEmailBeenNotified(emailOrKey) {
+  const key = typeof emailOrKey === 'string' ? emailOrKey : getEmailReadKey(emailOrKey);
+  return !!(key && state.notifiedEmailKeys.includes(key));
+}
+
+function markTicketNotified(ticket) {
+  if (ticket && !state.notifiedTicketKeys.includes(ticket)) state.notifiedTicketKeys.push(ticket);
+}
+
+function hasTicketBeenNotified(ticket) {
+  return !!(ticket && state.notifiedTicketKeys.includes(ticket));
+}
+
+function ticketForNotification(n) {
+  return getTicketKey([n.text, n.emailSubject, n.emailBody].filter(Boolean).join(' '));
+}
+
+function findEmailForNotification(n) {
+  if (n.emailId) return EMAILS.find(e => e.id === n.emailId) || null;
+
+  const ticket = getTicketKey([n.text, n.emailSubject, n.emailBody].filter(Boolean).join(' '));
+  if (ticket) {
+    const match = EMAILS.find(e =>
+      (e.subject && e.subject.includes(ticket)) ||
+      (e.body && e.body.includes(ticket))
+    );
+    if (match) return match;
+  }
+
+  if (n.emailSubject) {
+    const exact = EMAILS.find(e => e.subject === n.emailSubject);
+    if (exact) return exact;
+  }
+
+  return null;
+}
+
+function featureIdForNotification(n) {
+  if (n.reveal) return n.reveal;
+  const ticket = getTicketKey([n.text, n.emailSubject, n.emailBody].filter(Boolean).join(' '));
+  const map = { 'HMS-APP-412': 'f9', 'HMS-APP-413': 'f10', 'HMS-APP-414': 'f11' };
+  return map[ticket] || null;
+}
+
+function makeEmailFromNotification(n) {
+  const ticket = getTicketKey([n.text, n.emailSubject, n.emailBody].filter(Boolean).join(' '));
+  const defaults = {
+    'HMS-APP-412': {
+      subject: '[HMS-APP-412] Ny ticket: Brukere kan ikke logge inn etter oppdatering',
+      body: 'En ny ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Brukere kan ikke logge inn etter siste oppdatering\nPrioritet: Høy\n\nBeskrivelse: Brukere med eldre app-versjoner får ikke logget inn etter siste deploy.\n\nSe ticket: HMS-APP-412',
+      points: 20,
+      relevant: true
+    },
+    'HMS-APP-413': {
+      subject: '[HMS-APP-413] Ny ticket: Eksporter-knapp mangler på iPad',
+      body: 'En ny ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Eksporter-knapp vises ikke på iPad\nPrioritet: Middels\n\nBeskrivelse: På iPad mini vises ikke eksporter-knappen i rapport-visningen.\n\nSe ticket: HMS-APP-413',
+      points: 5,
+      relevant: true
+    },
+    'HMS-APP-414': {
+      subject: '[HMS-APP-414] Ny ticket: Serverkapasitet — feil ved peak-belastning',
+      body: 'En ny kritisk ticket er opprettet i prosjektet HMS-APP.\n\nTittel: Serverkapasitet — feil ved peak-belastning\nPrioritet: Kritisk\n\nBeskrivelse: Appen feiler når mange brukere laster opp samtidig. Dette bør inn i vurderingen før sprinten leveres.\n\nSe ticket: HMS-APP-414',
+      points: 20,
+      relevant: true
+    }
+  };
+  const d = defaults[ticket] || {};
+  return {
+    id: ticket ? 'email-' + ticket : 'email-notif-' + Math.abs(String(n.emailSubject || n.text || Date.now()).split('').reduce((a,c)=>((a<<5)-a)+c.charCodeAt(0),0)),
+    from: n.app === 'Jira' || ticket || n.title === 'Jira' ? 'Jira' : (n.title || 'E-post'),
+    fromRole: ticket || n.title === 'Jira' ? 'jira@skanska-digital.atlassian.net' : (n.app || 'Email'),
+    subject: n.emailSubject || d.subject || n.text.slice(0, 50),
+    date: 'Nå',
+    unread: true,
+    old: false,
+    hiddenUntilNotification: false,
+    points: n.emailPoints != null ? n.emailPoints : (d.points != null ? d.points : 5),
+    relevant: n.emailRelevant != null ? n.emailRelevant : !!d.relevant,
+    body: n.emailBody || d.body || n.text
+  };
+}
+
+function addEmailToInbox(emailData, options = {}) {
+  if (!emailData) return null;
+
+  const incoming = { ...emailData };
+  if (!incoming.date) incoming.date = 'Nå';
+  incoming.hiddenUntilNotification = false;
+  incoming.old = false;
+
+  // Brukes kun til sortering av nye/oppdaterte e-poster. Nyeste innkommende e-post skal alltid øverst.
+  incoming.receivedSeq = ++state.emailSeq;
+
+  const ticket = getTicketKey((incoming.subject || '') + ' ' + (incoming.body || ''));
+  let existing = null;
+
+  if (ticket) {
+    existing = EMAILS.find(e =>
+      (e.subject && e.subject.includes(ticket)) ||
+      (e.body && e.body.includes(ticket))
+    );
+  }
+  if (!existing) existing = EMAILS.find(e => e.id === incoming.id || e.subject === incoming.subject);
+
+  const readAlready = wasEmailRead(existing) || wasEmailRead(incoming);
+  let email;
+
+  if (existing) {
+    const canonicalId = existing.id;
+    const wasHidden = existing.hiddenUntilNotification === true;
+    Object.assign(existing, incoming);
+    existing.id = canonicalId;
+    existing.hiddenUntilNotification = false;
+    existing.old = false;
+    existing.date = incoming.date || 'Nå';
+    existing.receivedSeq = incoming.receivedSeq;
+    // Første gang en skjult/ny e-post kommer via varsel skal den være ulest.
+    // Hvis brukeren allerede har lest samme ticket/subject, skal den forbli lest.
+    existing.unread = readAlready ? false : true;
+    email = existing;
+  } else {
+    incoming.unread = readAlready ? false : true;
+    EMAILS.push(incoming);
+    email = incoming;
+  }
+
+  if (options.fromNotification) rememberEmailNotified(email);
+  buildEmailList();
+  updateInboxBadge();
+  return email;
+}
+
+function ensureEmailForNotification(n) {
+  const isEmailNotification = n.app === 'Email' || n.panel === 'inbox' || !!n.emailBody || !!n.emailSubject;
+  if (!isEmailNotification) return null;
+
+  const normalizedEmail = makeEmailFromNotification(n);
+  const email = addEmailToInbox(normalizedEmail, { fromNotification: true });
+
+  if (email) {
+    n.emailId = email.id;
+    email.hiddenUntilNotification = false;
+    // Mail-varsler skal alltid synliggjøre mailen. De skal bare ikke gjøre en allerede lest sak ulest igjen.
+    email.unread = wasEmailRead(email) ? false : true;
+    buildEmailList();
+    updateInboxBadge();
+  }
+
+  return email;
+}
+
+function buildEmailList() {
+  const list = document.getElementById('email-list');
+  list.innerHTML = '';
+  function parseDateStr(d) {
+    if (!d) return 0;
+    if (d === 'Nå') return 99999;
+    if (d.startsWith('I dag')) {
+      const t = d.replace('I dag, ', '');
+      return 20000 + parseInt(t.replace(':', ''));
+    }
+    if (d.startsWith('For')) return 5000;
+    const months = {'jan':1,'feb':2,'mar':3,'apr':4,'mai':5,'jun':6,'jul':7,'aug':8,'sep':9,'okt':10,'nov':11,'des':12};
+    const m = d.match(/(\d+)\.\s*(\w+)/);
+    if (m) return parseInt(m[1]) + (months[m[2]] || 0) * 31;
+    return 0;
+  }
+  function emailOrderKey(email) {
+    // E-poster som har kommet inn under spillet får stigende sekvensnummer.
+    // Det gjør sorteringen stabil selv når flere har datoen "Nå".
+    if (email && typeof email.receivedSeq === 'number') return 1000000 + email.receivedSeq;
+    return parseDateStr(email && email.date);
+  }
+
+  [...EMAILS].filter(email => !email.hiddenUntilNotification).sort((a, b) => emailOrderKey(b) - emailOrderKey(a)).forEach(email => {
+    const item = document.createElement('div');
+    item.className = 'email-item' + (email.unread ? ' unread' : '');
+    item.id = 'email-item-' + email.id;
+    item.innerHTML = `
+      <div class="email-sender">
+        ${email.unread ? '<div class="unread-dot" style="flex-shrink:0;"></div>' : ''}
+        <span class="email-name">${email.from}</span>
+        <span class="email-date">${email.date}</span>
+      </div>
+      <div class="email-subject">${email.subject}</div>
+    `;
+    item.addEventListener('click', () => openEmail(email, item));
+    list.appendChild(item);
+  });
+
+}
+
+function openEmail(email, item) {
+  if (!email) return;
+
+  const firstRead = !wasEmailRead(email);
+  const canonicalEmail = markEmailRead(email.id) || email;
+
+  // Finn riktig DOM-element etter at markEmailRead har bygget listen på nytt.
+  document.querySelectorAll('.email-item').forEach(i => i.classList.remove('selected'));
+  const realItem = document.getElementById('email-item-' + canonicalEmail.id) || item;
+  if (realItem) realItem.classList.add('selected');
+
+  if (firstRead && canonicalEmail.points > 0) addScore(canonicalEmail.points);
+
+  const pane = document.getElementById('email-body-pane');
+  pane.innerHTML = '';
+
+  const meta = document.createElement('div');
+  meta.id = 'email-meta';
+  const subj = document.createElement('div');
+  subj.className = 'subject';
+  subj.textContent = canonicalEmail.subject || '';
+  const from = document.createElement('div');
+  from.className = 'from';
+  from.textContent = (canonicalEmail.from || '') + ' - ' + (canonicalEmail.fromRole || '') + ' - ' + (canonicalEmail.date || '');
+  meta.appendChild(subj);
+  meta.appendChild(from);
+  pane.appendChild(meta);
+
+  const body = document.createElement('div');
+  body.id = 'email-body-text';
+  body.innerHTML = (canonicalEmail.body || '').replace(/\n/g, '<br>');
+  pane.appendChild(body);
+
+  updateInboxBadge();
+}
+
+
+function markChatMessageShown(msg) {
+  if (!msg) return;
+  msg.shown = true;
+  if (typeof msg.shownSeq !== 'number') msg.shownSeq = ++state.chatSeq;
+  msg.time = formatCurrentGameTime();
+}
+
+function formatCurrentGameTime() {
+  const elapsed = Math.max(0, GAME_DURATION - state.timeLeft);
+  const baseMinutes = 8 * 60; // Spillet starter rundt 08:00 i historien.
+  const total = baseMinutes + Math.floor(elapsed / 60);
+  const h = Math.floor(total / 60).toString().padStart(2, '0');
+  const m = (total % 60).toString().padStart(2, '0');
+  return h + ':' + m;
+}
+
+// ═══════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════
+function switchChannel(ch) {
+  state.currentChannel = ch;
+  document.querySelectorAll('.channel-item').forEach(i => i.classList.toggle('active', i.dataset.ch === ch));
+  const names = { dev: '# dev-teamet', general: '# general', dm: '🔒 Anders' };
+  document.getElementById('chat-header').textContent = names[ch];
+  buildChatChannel(ch);
+  const badge = document.getElementById(ch + '-badge');
+  if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
+}
+
+function buildChatChannel(ch) {
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  const messages = (CHAT_MESSAGES[ch] || [])
+    .filter(msg => msg.shown)
+    .sort((a, b) => (a.shownSeq || 0) - (b.shownSeq || 0));
+  messages.forEach(msg => renderChatMsg(msg));
+  requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+}
+
+
+function renderChatMsg(msg) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.id = 'cmsg-' + msg.id;
+
+  let replyNote = '';
+  if (state.chatReplies[msg.id] !== undefined) {
+    const chosen = msg.replies ? msg.replies[state.chatReplies[msg.id]] : null;
+    if (chosen) {
+      const shownAnswer = chosen.text;
+      replyNote = '<div class="reply-note" style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;">Du svarte: \"' + shownAnswer + '\"</div>';
+    } else {
+      replyNote = '<div class="reply-note" style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;">Ignorert</div>';
+    }
+  }
+
+  div.innerHTML = '<div class="chat-avatar" style="background:' + msg.color + '22;color:' + msg.color + ';">' + msg.avatar + '</div>' +
+    '<div class="chat-content">' +
+    '<div class="chat-name" style="color:' + msg.color + ';">' + msg.author + ' <span class="chat-time">' + msg.time + '</span></div>' +
+    '<div class="chat-text">' + msg.text + '</div>' +
+    replyNote +
+    '</div>';
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Vis quick replies i bunnen hvis melding krever svar og ikke svart ennå
+  updateQuickReplies();
+}
+
+function updateQuickReplies() {
+  const qr = document.getElementById('chat-quick-replies');
+  const inputArea = document.getElementById('chat-input-area');
+  if (!qr) return;
+  qr.innerHTML = '';
+  qr.classList.add('hidden');
+  document.querySelectorAll('.chat-msg.awaiting-reply').forEach(el => el.classList.remove('awaiting-reply'));
+
+  // Vis alle ubesvarte meldinger i aktiv kanal. Nye meldinger skal ikke overskrive gamle svarvalg.
+  const ch = state.currentChannel;
+  const msgs = CHAT_MESSAGES[ch] || [];
+  const pending = msgs
+    .filter(m => m.requiresReply && m.shown && state.chatReplies[m.id] === undefined)
+    .sort((a, b) => (a.shownSeq || 0) - (b.shownSeq || 0));
+
+  if (pending.length === 0) {
+    if (inputArea) inputArea.style.display = 'none';
+    return;
+  }
+  if (inputArea) inputArea.style.display = 'none';
+  qr.classList.remove('hidden');
+
+  if (pending.length > 1) {
+    const count = document.createElement('div');
+    count.className = 'quick-reply-count';
+    count.textContent = pending.length + ' ubesvarte meldinger i denne kanalen';
+    qr.appendChild(count);
+  }
+
+  pending.forEach((msg) => {
+    const msgEl = document.getElementById('cmsg-' + msg.id);
+    if (msgEl) msgEl.classList.add('awaiting-reply');
+
+    const panel = document.createElement('div');
+    panel.className = 'quick-reply-panel';
+
+    const context = document.createElement('div');
+    context.className = 'quick-reply-context';
+    const author = document.createElement('div');
+    author.className = 'qr-author';
+    author.textContent = msg.author + ' spør:';
+    const text = document.createElement('div');
+    text.className = 'qr-text';
+    text.textContent = msg.text;
+    context.appendChild(author);
+    context.appendChild(text);
+    panel.appendChild(context);
+
+    const actions = document.createElement('div');
+    actions.className = 'quick-reply-actions';
+
+    (msg.replies || []).forEach((r, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'quick-reply';
+      btn.textContent = r.text;
+      btn.title = r.text;
+      btn.addEventListener('click', () => replyChat(msg.id, i));
+      actions.appendChild(btn);
+    });
+
+    const ignBtn = document.createElement('button');
+    ignBtn.className = 'quick-reply ignore';
+    ignBtn.textContent = 'Ignorer denne meldingen';
+    ignBtn.addEventListener('click', () => ignoreChatMsg(msg.id));
+    actions.appendChild(ignBtn);
+
+    panel.appendChild(actions);
+    qr.appendChild(panel);
+  });
+}
+function ignoreChatMsg(msgId) {
+  state.chatReplies[msgId] = -1; // -1 = ignorert
+  addScore(-5);
+  const el = document.getElementById('cmsg-' + msgId);
+  if (el) {
+    const content = el.querySelector('.chat-content');
+    if (content) {
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;';
+      note.textContent = 'Ignorert';
+      content.appendChild(note);
+    }
+  }
+  updateQuickReplies();
+}
+
+function replyChat(msgId, replyIndex) {
+  state.chatReplies[msgId] = replyIndex;
+  let msg = null;
+  for (const ch of Object.keys(CHAT_MESSAGES)) {
+    msg = CHAT_MESSAGES[ch].find(m => m.id === msgId);
+    if (msg) break;
+  }
+  if (!msg) return;
+  const reply = msg.replies[replyIndex];
+  addScore(reply.points);
+  state.chatScore += reply.points;
+
+  // Oppdater chat-melding med svar-note
+  const el = document.getElementById('cmsg-' + msgId);
+  if (el) {
+    const content = el.querySelector('.chat-content');
+    if (content) {
+      const existing = content.querySelector('.reply-note');
+      if (existing) existing.remove();
+      const note = document.createElement('div');
+      note.className = 'reply-note';
+      note.style.cssText = 'margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;';
+      note.textContent = 'Du svarte: "' + reply.text + '"';
+      content.appendChild(note);
+    }
+  }
+
+  // Oppdater quick replies
+  updateQuickReplies();
+
+  // Thomas-offline svar. Lagres i chat-historikken, slik at det ikke forsvinner når man bytter fane/kanal.
+  if (msgId === 'cm1' && /offline/i.test(reply.text)) {
+    setTimeout(() => {
+      const responseText = 'Offline? Nei, ikke realistisk denne sprinten. Det er minst 3-4 ukers arbeid — sync-logikk, konfliktshåndtering, lokal database. Vi har ikke engang design på det ennå.';
+      const ch = 'dev';
+      if (!CHAT_MESSAGES[ch]) CHAT_MESSAGES[ch] = [];
+      const alreadyExists = CHAT_MESSAGES[ch].some(m => m.author === 'Thomas' && m.text === responseText);
+      if (alreadyExists) return;
+      const followup = {
+        id: 'reply-thomas-offline-' + Date.now(),
+        author: 'Thomas',
+        avatar: 'TH',
+        color: '#3b82f6',
+        time: formatCurrentGameTime(),
+        text: responseText,
+        requiresReply: false,
+        shown: false
+      };
+      markChatMessageShown(followup);
+      CHAT_MESSAGES[ch].push(followup);
+
+      const chatActive = document.getElementById('panel-chat').classList.contains('active');
+      if (chatActive && state.currentChannel === ch) {
+        renderChatMsg(followup);
+      } else {
+        const badge = document.getElementById(ch + '-badge');
+        const chatBadge = document.getElementById('chat-badge');
+        if (badge) { badge.classList.remove('hidden'); badge.textContent = (parseInt(badge.textContent) || 0) + 1; }
+        if (chatBadge) { chatBadge.classList.remove('hidden'); chatBadge.textContent = (parseInt(chatBadge.textContent) || 0) + 1; }
+      }
+    }, 1500);
+  }
+}
+
+// Tidsstyrt utsending av chat-meldinger
+function scheduleChatMessages() {
+  // Tidspunkt i minutter fra spillstart
+  const msgSchedule = {
+    'cm0': 0.2,  // Thomas - innloggingsfeil (vises før ekstra Thomas-varsler)
+    'cm1': 2,    // Thomas - PDF-sporsmal
+    'cm2': 8,    // Lena - brukertest
+    'cm3': 0.3,  // HR - kapasitetsrapport
+    'cm4': 7,    // Nilsen - PDF-bekreftelse
+    'cm5': 1,    // Anders DM
+    'cm6': 4,    // Morten - Bergen
+    'cm7': 6,    // Lena - iPad-ticket
+    'cm8': 13,   // Anders - innlogging
+    'cm9': 5,    // Petter - wifi
+    'cm10': 9,   // HR - bursdag
+    'cm11': 12,  // Petter - lunsj
+  };
+
+  Object.keys(CHAT_MESSAGES).forEach(ch => {
+    CHAT_MESSAGES[ch].forEach(msg => {
+      const minutes = msgSchedule[msg.id] || 3;
+      const delay = minutes * 60 * 1000;
+      setTimeout(() => {
+        if (state.gameOver) return;
+        markChatMessageShown(msg);
+
+        const chatTabActive = document.getElementById('panel-chat').classList.contains('active');
+        const correctChannel = state.currentChannel === ch;
+        const userSeesThisMsg = chatTabActive && correctChannel;
+
+        if (userSeesThisMsg) {
+          renderChatMsg(msg);
+        } else {
+          const chNames = { dev: '#dev-teamet', general: '#general', dm: 'Anders' };
+          showNotifBox({
+            app: 'Slack',
+            color: '#3b82f6',
+            title: chNames[ch] || ch,
+            text: msg.author + ': ' + msg.text.slice(0, 60),
+            channel: ch
+          });
+          // Oppdater badges
+          const badge = document.getElementById(ch + '-badge');
+          const chatBadge = document.getElementById('chat-badge');
+          if (badge) {
+            badge.classList.remove('hidden');
+            badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+          }
+          if (chatBadge) {
+            chatBadge.classList.remove('hidden');
+            chatBadge.textContent = (parseInt(chatBadge.textContent) || 0) + 1;
+          }
+        }
+      }, delay);
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// SPRINT
+// ═══════════════════════════════════════
+function revealFeature(featureId, fromMsg, switchToSprint) {
+  const f = FEATURES.find(function(feat) { return feat.id === featureId; });
+  if (!f) return;
+
+  const alreadyRevealed = state.revealedFeatureIds.includes(featureId);
+  const wasHidden = !!f.hidden;
+  f.hidden = false;
+  if (!alreadyRevealed) state.revealedFeatureIds.push(featureId);
+
+  // Idempotent: ett feature-kort per ticket. Animasjon skjer kun første gang kortet faktisk dukker opp.
+  if (!document.querySelector('[data-id="' + f.id + '"]')) {
+    const shouldAnimate = !state.animatedFeatureIds.includes(featureId) && !alreadyRevealed;
+    addFeatureCard(f, shouldAnimate);
+    if (!state.animatedFeatureIds.includes(featureId)) state.animatedFeatureIds.push(featureId);
+  }
+
+  // Ingen separat Jira/backlog-popup: nye tickets varsles via e-post, mens backlog oppdateres stille.
+
+  if (switchToSprint) switchTab('sprint');
+}
+
+function addFeatureCard(f, animate) {
+  const backlog = document.getElementById('backlog-drop');
+  if (!backlog) return; // Sprint-board ikke bygget ennå - buildSprintBoard vil vise den
+  if (document.querySelector('[data-id="' + f.id + '"]')) return;
+
+  const card = document.createElement('div');
+  card.className = 'feature-card';
+  card.draggable = true;
+  card.dataset.id = f.id;
+  card.dataset.days = f.days;
+  if (animate) {
+    card.style.animation = 'notif-in 0.4s cubic-bezier(0.34,1.2,0.64,1)';
+    setTimeout(function() { card.style.animation = ''; }, 500);
+  }
+  card.innerHTML =
+    '<div><div class="feature-name">' + f.name + '</div><div class="feature-desc">' + f.desc + '</div></div>' +
+    '<span class="feature-tag tag-' + f.tag + '">' + f.tagLabel + '</span>';
+
+  // Legg til drag-listeners
+  let dragging = null;
+  card.addEventListener('dragstart', function() { window._setDragging(card); setTimeout(function() { card.classList.add('dragging'); }, 0); });
+  card.addEventListener('dragend', function() { card.classList.remove('dragging'); window._setDragging(null); document.querySelectorAll('.sprint-col').forEach(function(c) { c.classList.remove('drag-over'); }); });
+  backlog.prepend(card);
+}
+
+function attachDragListeners(card) {
+  // Håndteres av zone-listeners i buildSprintBoard
+}
+
+function buildSprintBoard() {
+  const backlog = document.getElementById('backlog-drop');
+  backlog.innerHTML = '';
+  let dragging = null;
+
+  // Vis alle features som ikke er hidden og ikke allerede har et kort
+  FEATURES.filter(function(f) { return !f.hidden; }).forEach(function(f) {
+    if (document.querySelector('[data-id="' + f.id + '"]')) return; // allerede i DOM
+    const card = document.createElement('div');
+    card.className = 'feature-card';
+    card.draggable = true;
+    card.dataset.id = f.id;
+    card.dataset.days = f.days;
+    card.innerHTML = `
+      <div>
+        <div class="feature-name">${f.name}</div>
+        <div class="feature-desc">${f.desc}</div>
+      </div>
+      <span class="feature-tag tag-${f.tag}">${f.tagLabel}</span>
+    `;
+    card.addEventListener('dragstart', () => { window._setDragging(card); setTimeout(() => card.classList.add('dragging'), 0); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); window._setDragging(null); document.querySelectorAll('.sprint-col').forEach(c => c.classList.remove('drag-over')); });
+    backlog.appendChild(card);
+  });
+
+  setupDropZones();
+}
+
+function setupDropZones() {
+  let dragging = null;
+
+  // Sett dragging-variabel globalt så både eksisterende og nye kort kan bruke samme drag-state.
+  window._getDragging = () => dragging;
+  window._setDragging = (c) => { dragging = c; };
+
+  function bindDropTarget(col, zone) {
+    if (!col || !zone || col.dataset.dropBound === 'true') return;
+    col.dataset.dropBound = 'true';
+
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      col.classList.add('drag-over');
+    });
+
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    });
+
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+
+      const d = window._getDragging();
+      if (!d) return;
+
+      const fromSprint = d.closest('#sprint-drop') !== null;
+      const toSprint = zone.id === 'sprint-drop';
+      const days = parseInt(d.dataset.days, 10) || 0;
+
+      if (toSprint && !fromSprint) state.sprintDays += days;
+      if (!toSprint && fromSprint) state.sprintDays -= days;
+
+      // Dropper alltid i selve listen, selv om brukeren slipper på tomrommet i boksen.
+      zone.appendChild(d);
+
+      const hint = document.getElementById('sprint-hint');
+      if (hint && document.querySelector('#sprint-drop .feature-card')) hint.style.display = 'none';
+      if (hint && !document.querySelector('#sprint-drop .feature-card')) hint.style.display = '';
+      updateCapacity();
+    });
+  }
+
+  bindDropTarget(document.getElementById('backlog-drop')?.closest('.sprint-col'), document.getElementById('backlog-drop'));
+  bindDropTarget(document.getElementById('sprint-drop')?.closest('.sprint-col'), document.getElementById('sprint-drop'));
+}
+
+function updateCapacity() {
+  const MAX = 10;
+  const pct = Math.min(state.sprintDays / MAX * 100, 100);
+  const fill = document.getElementById('cap-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'cap-bar-fill' + (state.sprintDays > MAX ? ' over' : state.sprintDays >= 8 ? ' warn' : '');
+  document.getElementById('cap-days').textContent = state.sprintDays + ' / 10 d';
+}
+
+let deliverAttempts = 0;
+let deliveryInProgress = false;
+
+function collectAndFinishSprint() {
+  if (deliveryInProgress || state.gameOver) return;
+  deliveryInProgress = true;
+
+  try {
+    const sprintCards = document.querySelectorAll('#sprint-drop .feature-card');
+    state.sprintFeatures = [...sprintCards].map(c => c.dataset.id);
+    state.overCapacity = state.sprintDays > 10;
+
+    state.sprintFeatures.forEach(fid => {
+      const f = FEATURES.find(f => f.id === fid);
+      if (f) addScore(f.points);
+    });
+    if (state.overCapacity) addScore(-20);
+  } catch (err) {
+    console.error('Kunne ikke beregne sprintscore:', err);
+  }
+
+  clearInterval(state.timerInterval);
+  endGame(false);
+}
+
+function showEndScreenFallback(scenario, timeOut) {
+  const end = document.getElementById('end-screen');
+  if (!end) return;
+  const game = document.getElementById('game');
+  const intro = document.getElementById('intro');
+  if (game) game.style.display = 'none';
+  if (intro) intro.style.display = 'none';
+  end.classList.add('show');
+  end.style.display = 'flex';
+  end.scrollTop = 0;
+  document.body.style.overflow = 'auto';
+
+  const emoji = document.getElementById('sc-emoji');
+  const title = document.getElementById('sc-title');
+  const text = document.getElementById('sc-text');
+  const score = document.getElementById('sc-score');
+  if (emoji) emoji.textContent = scenario.emoji;
+  if (title) title.textContent = scenario.title;
+  if (text) text.textContent = (timeOut ? '⏰ Tiden gikk ut før du leverte sprinten. ' : '') + scenario.text;
+  if (score) score.textContent = state.score;
+}
+
+function getUnrevealedSurpriseFeature() {
+  return FEATURES.find(f => f.hidden && !state.revealedFeatureIds.includes(f.id));
+}
+
+function deliverSprint() {
+  if (state.gameOver) return;
+
+  // Første levering kan avbrytes av én ny, skjult sak. Etter det skal
+  // samme knapp alltid levere sprinten, også hvis spilleren valgte å omprioritere.
+  if (deliverAttempts === 0) {
+    deliverAttempts = 1;
+    const surprise = getUnrevealedSurpriseFeature();
+    if (surprise) {
+      revealFeature(surprise.id, 'ny innmelding', true);
+      showDeliverInterrupt(surprise);
+      return;
+    }
+  }
+
+  collectAndFinishSprint();
+}
+
+function showDeliverInterrupt(feature) {
+  // Fjern en eventuell gammel interrupt først, så vi aldri får to overlay som blokkerer klikk.
+  const oldOverlay = document.getElementById('deliver-interrupt-overlay');
+  if (oldOverlay) oldOverlay.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'deliver-interrupt-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface);border:1.5px solid var(--accent);border-radius:16px;padding:28px;max-width:480px;width:100%;font-family:"Syne",sans-serif;';
+  box.innerHTML =
+    '<div style="font-size:22px;margin-bottom:12px;">⚠️ Vent litt!</div>' +
+    '<div style="font-size:14px;color:var(--muted);margin-bottom:8px;">Akkurat idet du skulle levere dukket det opp noe nytt i backloggen:</div>' +
+    '<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:20px;">' +
+    '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">' + feature.name + '</div>' +
+    '<div style="font-size:12px;color:var(--muted);">' + feature.desc + ' — ' + feature.tagLabel + '</div>' +
+    '</div>' +
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Vil du omprioritere sprinten, eller levere som planlagt?</div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="interrupt-reprioritize" style="flex:1;padding:10px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;">Omprioritere →</button>' +
+    '<button id="interrupt-deliver" style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:10px;font-size:13px;font-weight:700;color:#0a0f1a;cursor:pointer;font-family:inherit;">Lever uansett →</button>' +
+    '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  document.getElementById('interrupt-reprioritize').addEventListener('click', () => {
+    overlay.remove();
+    switchTab('sprint');
+    addScore(-5); // Koster litt tid å omplanlegge
+
+    // Gjør det synlig at neste klikk faktisk leverer.
+    const btn = document.getElementById('deliver-btn');
+    if (btn) btn.textContent = 'Lever sprint →';
+  });
+
+  document.getElementById('interrupt-deliver').addEventListener('click', () => {
+    overlay.remove();
+    collectAndFinishSprint();
+  });
+}
+
+// Tett, jevn flyt av ekstra meldinger/avbrytelser. Gir noe ca. hvert 15. sekund uten Jira-popup-duplikater.
+function scheduleExtraMessages() {
+  // Ekstra avbrytelser hvert 15. sekund. Disse er bevisst blandet mellom
+  // Slack, e-post og SMS, og inneholder både støy og signaler som hjelper spilleren
+  // å tolke riktig sprintprioritet.
+  const extraEvents = [
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Ser på morgenloggen nå. Innloggingsfeilen gjelder spesielt eldre app-versjoner.' },
+    { kind: 'email', title: 'Kari Nordahl', color: '#f59e0b', subject: 'Varsler om endret rutine kom ikke frem', text: 'Hei Sara. Bare en presisering: varselet som ikke kom frem gjaldt endret rutine på et område med høy risiko. Det gikk bra, men dette bør ikke ligge lenge.' },
+    { kind: 'slack', ch: 'general', author: 'Petter', avatar: 'PA', color: '#64748b', text: 'Fant adapteren. Den lå i møterom Blå, hvis noen trenger den.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Hvis bildeopplasting virker igjen før torsdag, slipper vi dobbeltføring på papir.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Jeg ser på upload- og innloggingsfeilene først. De treffer faktiske brukere akkurat nå.', requiresReply: true, replies: [
+      { text: 'Enig — prioriter produksjonsfeil og feltbrukere først.', points: 12, good: true },
+      { text: 'Vent med det, vi må ha mer synlig demo-funksjonalitet.', points: -8, good: false },
+      { text: 'Kan du avklare om dette er lite nok for sprinten?', points: 8, good: true }
+    ] },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Fra brukertesten sist: folk ga opp når bildevedlegg feilet. Det var viktigere enn layouten.', requiresReply: true, replies: [
+      { text: 'La oss bruke det som signal for å prioritere bildevedlegg/upload.', points: 12, good: true },
+      { text: 'Design og layout er fortsatt viktigst akkurat nå.', points: -6, good: false },
+      { text: 'Kan du få én rask validering med anleggsleder?', points: 10, good: true }
+    ] },
+    { kind: 'email', title: 'GitHub', color: '#8b5cf6', subject: 'PR #247 er klar for review', text: 'Thomas Hagen markerer PR #247 som klar. Endringen reduserer minnebruk ved store JPEG-opplastinger.' },
+    { kind: 'slack', ch: 'general', author: 'Morten', avatar: 'ML', color: '#10b981', text: 'Bergen-prosjektene kan vente til neste uke hvis dere har produksjonsfeil nå.' },
+    { kind: 'sms', title: 'Anders', color: '#10b981', text: 'Vi har 18 rapportbilder som må dokumenteres før Arbeidstilsynet kommer.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Serverfeilene kommer bare når mange laster opp samtidig. Ikke konstant, men stygt når det skjer.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-414] Kommentar: Feil ved peak-belastning', text: 'Kommentar fra drift: Feilen skjer typisk mellom 07:00 og 08:30 når flere prosjekter synker rapporter samtidig. Foreslår kapasitetsøkning og bedre køhåndtering.' },
+    { kind: 'slack', ch: 'general', author: 'HR', avatar: 'HR', color: '#8b5cf6', text: 'Kapasitetsrapporten trenger bare totaldager, ikke full prosjektplan.' },
+    { kind: 'email', title: 'Lena Dahl', color: '#f59e0b', subject: 'Avviksskjema: liten designendring', text: 'Jeg kan ta designendringen uten utvikler hvis dere bare godkjenner rekkefølgen på feltene. Ikke la dette spise sprintkapasitet.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Det viktigste for oss er at dokumentasjonen faktisk blir lagret med bilder.', requiresReply: true, replies: [
+      { text: 'Vi legger bildevedlegg og stabil opplasting høyt i sprinten.', points: 15, good: true },
+      { text: 'Vi må nok vente til etter demoen.', points: -12, good: false },
+      { text: 'Kan dere teste en fiks i morgen hvis vi får den inn?', points: 8, good: true }
+    ] },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Offline-modus er ikke “bare cache”. Det er sync, konflikter og lokal database.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-389] Estimat oppdatert: Offline-modus', text: 'Oppdatert estimat: 15–20 utviklingsdager før test. Bør splittes opp før sprintplanlegging.' },
+    { kind: 'slack', ch: 'general', author: 'Petter', avatar: 'PA', color: '#64748b', text: 'Kake er flyttet til 14:30. Viktig for kake, lite viktig for sprint.' },
+    { kind: 'email', title: 'Direktør Nilsen', color: '#ef4444', subject: 'Fredag: hva kan vi faktisk vise?', text: 'Hvis PDF ikke er realistisk, trenger jeg et alternativ til demoen innen i morgen. Hellere ærlig status enn overraskelse fredag.' },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Kari nevnte iPad-buggen, men hun sa også at varslene er mer alvorlige enn eksportknappen.' },
+    { kind: 'call', title: 'Ukjent nummer', color: '#64748b', text: 'Selger om kontormøbler' },
+    { kind: 'email', title: 'IT-support', color: '#f59e0b', subject: 'Planlagt vedlikehold i kveld', text: 'Kort varsel: staging-miljøet kan være ustabilt etter kl. 18. Produksjon påvirkes ikke.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Når opplasting feiler, vet vi ikke om rapporten faktisk er komplett. Det er den skumle delen.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Innloggingsfiksen ser liten ut hvis vi begrenser den til eldre app-versjoner først.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-412] Kommentar: Mulig quick fix', text: 'Thomas kommenterte: Kan sannsynligvis håndteres med kompatibilitetssjekk og fallback-token. Estimat 1–2 dager.' },
+    { kind: 'slack', ch: 'general', author: 'Morten', avatar: 'ML', color: '#10b981', text: 'Onboarding for Bergen kan tas som supportoppgave. Trenger ikke inn i sprinten nå.' },
+    { kind: 'email', title: 'Kantina', color: '#f59e0b', subject: 'Frist for lunsjbestilling', text: 'Siste frist for å endre lunsjbestilling er kl. 11:30.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Hvis vi tar både bildevedlegg, upload-fiks og innlogging, tror jeg sprinten fortsatt er realistisk.' },
+    { kind: 'email', title: 'Kari Nordahl', color: '#f59e0b', subject: 'Tolkning av prioritet', text: 'Jeg ville rangert dette slik fra feltet: 1) få lagret dokumentasjon, 2) få varsler frem, 3) eksportere pent.' },
+    { kind: 'slack', ch: 'general', author: 'HR', avatar: 'HR', color: '#8b5cf6', text: 'Fagdagspåmelding lukkes kl. 16. Ikke sprintkritisk.' },
+    { kind: 'sms', title: 'Anders', color: '#10b981', text: 'Kari sier hun også har mistet varsler. Det er ikke bare oss på B-14.' },
+    { kind: 'email', title: 'GitHub', color: '#8b5cf6', subject: 'PR #247: testresultater', text: 'Automatiske tester passerer. Endringen berører kun opplastingsmodulen.' },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Dashboard-redesign kan godt vente. Ingen bruker har etterspurt det denne måneden.' },
+    { kind: 'email', title: 'Sikkerhetsvarsel', color: '#ef4444', subject: 'Påminnelse om tofaktor', text: 'Automatisk påminnelse: tofaktor må fornyes innen 30 dager.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Vi kan leve med stygg UI. Vi kan ikke leve med at rapporter forsvinner.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Push-varsler alene løser ikke varslingsmodulen hvis backend av og til dropper meldingen.', requiresReply: true, replies: [
+      { text: 'Da bør vi fikse varslingsmodulen, ikke bare legge på push.', points: 12, good: true },
+      { text: 'Ta push-varsler først, det ser bedre ut.', points: -8, good: false },
+      { text: 'Kan du estimere backend-fiksen separat?', points: 7, good: true }
+    ] },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-4xx] Observasjon: Varslingsmodul', text: 'Flere saker peker mot samme rotårsak: meldinger markeres sendt før kvittering fra mottaker er lagret.' },
+    { kind: 'slack', ch: 'general', author: 'Petter', avatar: 'PA', color: '#64748b', text: 'Jeg booket feil møterom. Beklager støy.' },
+    { kind: 'email', title: 'Direktør Nilsen', color: '#ef4444', subject: 'Demoalternativ godtas', text: 'Hvis dere kan vise stabil bildeopplasting og tydelig plan for PDF, kan det fungere for styret.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Foreslår at vi ikke tar offline-modus før vi har en egen teknisk gjennomgang.' },
+    { kind: 'call', title: 'Mamma', color: '#64748b', text: 'Ikke hast, men ringer deg nå' },
+    { kind: 'email', title: 'Lena Dahl', color: '#f59e0b', subject: 'Rask brukertest mulig onsdag', text: 'Jeg kan få tak i to anleggsledere onsdag morgen. Det koster lite og kan validere HMS-skjemaendringen.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Hvis dere fikser bildevedlegg først, kan vi teste på ekte rapport i morgen.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-413] Kommentar: iPad-eksport', text: 'Kari bekrefter workaround: eksport fungerer via desktop. iPad-feilen er irriterende, men blokkerer ikke inspeksjonen.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Autosave er enkel og reduserer tap av skjemadata. Kan passe godt sammen med opplastingsfiksen.' },
+    { kind: 'email', title: 'Facilities', color: '#f59e0b', subject: 'Renhold flyttet til onsdag', text: 'Renhold i 3. etasje er flyttet til onsdag morgen.' },
+    { kind: 'slack', ch: 'general', author: 'Morten', avatar: 'ML', color: '#10b981', text: 'Jeg kan samle onboarding-spørsmålene i ett dokument til neste sprint.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Upload-fiks, innlogging og en liten stabilitetsjobb ser realistisk ut sammen. Offline passer fortsatt ikke.' },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Jeg stemmer for minst én felt-test før vi prioriterer visuelle forbedringer.' },
+    { kind: 'call', title: 'Anders Bakke', color: '#10b981', text: 'Oppfølging fra byggeplassen' }
+  ];
+
+  for (let t = 15; t < GAME_DURATION; t += 15) {
+    const idx = Math.floor(t / 15) - 1;
+    const item = extraEvents[idx % extraEvents.length];
+    setTimeout(() => {
+      if (state.gameOver) return;
+      state.extraMessageSeq++;
+
+      if (item.kind === 'slack') {
+        const msg = {
+          id: 'extra-' + state.extraMessageSeq + '-' + idx,
+          author: item.author,
+          avatar: item.avatar,
+          color: item.color,
+          time: formatCurrentGameTime(),
+          text: item.text,
+          requiresReply: !!item.requiresReply,
+          replies: item.replies || undefined,
+          shown: false
+        };
+        if (!CHAT_MESSAGES[item.ch]) CHAT_MESSAGES[item.ch] = [];
+        const alreadyExists = CHAT_MESSAGES[item.ch].some(m => m.text === msg.text && m.author === msg.author);
+        if (!alreadyExists) {
+          markChatMessageShown(msg);
+          CHAT_MESSAGES[item.ch].push(msg);
+        }
+
+        const chatTabActive = document.getElementById('panel-chat').classList.contains('active');
+        const userSeesThisMsg = chatTabActive && state.currentChannel === item.ch;
+        if (userSeesThisMsg) {
+          if (!alreadyExists) renderChatMsg(msg);
+        } else {
+          const chNames = { dev: '#dev-teamet', general: '#general', dm: 'Anders' };
+          showNotification({ app: 'Slack', color: item.color, title: chNames[item.ch] || item.ch, text: item.author + ': ' + item.text, channel: item.ch });
+          const badge = document.getElementById(item.ch + '-badge');
+          const chatBadge = document.getElementById('chat-badge');
+          if (badge) { badge.classList.remove('hidden'); badge.textContent = (parseInt(badge.textContent) || 0) + 1; }
+          if (chatBadge) { chatBadge.classList.remove('hidden'); chatBadge.textContent = (parseInt(chatBadge.textContent) || 0) + 1; }
+        }
+        return;
+      }
+
+      if (item.kind === 'call') {
+        showNotification({ app: 'Telefon', isCall: true, color: item.color, title: item.title, text: item.text });
+        return;
+      }
+
+      if (item.kind === 'sms') {
+        showNotification({ app: 'SMS', color: item.color, title: item.title, text: item.text });
+        return;
+      }
+
+      if (item.kind === 'email') {
+        const n = {
+          app: 'Email',
+          color: item.color,
+          title: item.title,
+          text: item.subject,
+          panel: 'inbox',
+          emailSubject: item.subject,
+          emailPoints: item.subject.includes('Jira') || item.title === 'Kari Nordahl' || item.title === 'Thomas Hagen' || item.title === 'GitHub' ? 10 : 0,
+          emailRelevant: item.subject.includes('HMS-APP') || item.title === 'Kari Nordahl' || item.title === 'Thomas Hagen' || item.title === 'GitHub' || item.title === 'Direktør Nilsen' || item.title === 'Lena Dahl',
+          emailBody: item.text
+        };
+        ensureEmailForNotification(n);
+        showNotification(n);
+      }
+    }, t * 1000);
+  }
+}
+
+// ═══════════════════════════════════════
+// MOBILVARSLER
+// ═══════════════════════════════════════
+function scheduleNotifications() {
+  NOTIFICATIONS.forEach(n => {
+    const delay = n.time * 1000;
+    setTimeout(() => {
+      if (state.gameOver) return;
+
+      // Slack-meldinger styres bare av scheduleChatMessages(), slik at popup og faktisk Slack-innhold
+      // alltid kommer fra samme tidsplan.
+      if (n.app === 'Slack') return;
+
+      // Vi viser ikke egne Jira-popups lenger. Jira-saker kommer som e-postvarsler.
+      // Direkte Jira-events kan likevel brukes som stille fallback for backlog hvis vi ønsker det.
+      if (n.app === 'Jira' || n.directJira) {
+        const fallbackFeature = featureIdForNotification(n);
+        if (fallbackFeature && !state.revealedFeatureIds.includes(fallbackFeature)) {
+          revealFeature(fallbackFeature, n.app, false);
+        }
+        return;
+      }
+
+      const featureToReveal = featureIdForNotification(n);
+      const isEmailNotification = n.app === 'Email' || n.panel === 'inbox' || !!n.emailBody || !!n.emailSubject;
+
+      if (isEmailNotification) {
+        const email = ensureEmailForNotification(n);
+        if (featureToReveal) revealFeature(featureToReveal, 'Email', false);
+        // showNotification bruker n.emailId som ble satt av ensureEmailForNotification.
+        showNotification(n);
+        return;
+      }
+
+      if (featureToReveal) revealFeature(featureToReveal, n.app, false);
+      showNotification(n);
+    }, delay);
+  });
+}
+
+
+
+function showPassiveToast(title, text, color) {
+  const container = document.getElementById('notifications');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'notif';
+  el.style.borderColor = color || 'var(--border2)';
+  el.style.cursor = 'default';
+  el.innerHTML = '<div class="notif-app"><span class="notif-app-dot" style="background:' + (color || 'var(--muted)') + '"></span>System</div>' +
+    '<div class="notif-title">' + title + '</div>' +
+    '<div class="notif-text">' + text + '</div>';
+  container.appendChild(el);
+  setTimeout(() => {
+    if (el.parentNode) { el.classList.add('removing'); setTimeout(() => el.remove(), 300); }
+  }, 3500);
+}
+
+function showPhonePopup(n) {
+  const popup = document.getElementById('phone-popup');
+  const screen = document.getElementById('phone-screen');
+  const icon = document.getElementById('phone-icon');
+  const caller = document.getElementById('phone-caller');
+  const subtitle = document.getElementById('phone-subtitle');
+  const actions = document.getElementById('phone-actions');
+  const dismissText = document.getElementById('phone-dismiss-text');
+
+  const isCall = n.app === 'Telefon' || n.isCall;
+  const isSMS = n.app === 'SMS';
+  const callText = n.text || 'Det er et kort avbrudd som ikke gir ny sprintinformasjon.';
+
+  icon.textContent = isCall ? '📞' : '💬';
+  caller.textContent = n.title || (isCall ? 'Innkommende anrop' : 'SMS');
+  subtitle.textContent = isCall ? 'Innkommende anrop' : callText;
+
+  screen.className = isCall ? '' : 'sms-mode';
+  if (isCall) screen.style.animation = 'phone-ring 0.4s ease-in-out infinite alternate';
+  else screen.style.animation = 'phone-bounce 0.4s ease';
+
+  actions.innerHTML = '';
+
+  if (isCall) {
+    const answerBtn = document.createElement('button');
+    answerBtn.className = 'phone-btn choice answer';
+    answerBtn.textContent = 'Ta telefonen';
+    answerBtn.title = 'Ta telefonen';
+    answerBtn.addEventListener('click', () => {
+      if (!n._answered) {
+        n._answered = true;
+        addScore(-10);
+      }
+      screen.style.animation = 'none';
+      icon.textContent = '💬';
+      caller.textContent = n.title || 'Telefon';
+      subtitle.innerHTML = '<strong>Du tok telefonen.</strong><br><br>' + escapeHTML(callText);
+      actions.innerHTML = '';
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'chat-reply-btn';
+      doneBtn.style.cssText = 'margin-top:8px;padding:9px 16px;color:var(--text);border-color:var(--border2);';
+      doneBtn.textContent = 'Tilbake til spillet';
+      doneBtn.addEventListener('click', closePhonePopup);
+      actions.appendChild(doneBtn);
+    });
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'phone-btn choice dismiss';
+    dismissBtn.textContent = 'Ikke ta den';
+    dismissBtn.title = 'Ikke ta telefonen';
+    dismissBtn.addEventListener('click', () => {
+      closePhonePopup();
+    });
+
+    actions.appendChild(answerBtn);
+    actions.appendChild(dismissBtn);
+  }
+
+  if (dismissText) {
+    dismissText.style.display = isCall ? 'none' : 'block';
+    dismissText.textContent = isSMS ? 'Lukk' : 'Legg bort telefonen';
+    dismissText.onclick = () => { closePhonePopup(); };
+  }
+
+  popup.classList.add('show');
+
+  if (isSMS) {
+    setTimeout(() => closePhonePopup(), 12000);
+  }
+}
+
+function closePhonePopup() {
+  const popup = document.getElementById('phone-popup');
+  popup.classList.remove('show');
+}
+
+function showNotification(n) {
+  if (state.gameOver) return;
+  if (n.app === 'Jira' || n.directJira) return;
+
+  // Vis telefon-popup for SMS og anrop. Noen eldre events var merket som SMS selv om teksten beskriver et anrop.
+  const looksLikeCall = n.app === 'Telefon' || n.isCall || (n.app === 'SMS' && /\bringer\b|innkommende anrop|tar du telefonen/i.test(n.text || ''));
+  if (looksLikeCall) {
+    n.app = 'Telefon';
+    n.isCall = true;
+    showPhonePopup(n);
+    // Spilleren kan ta eller ikke ta telefonen i popupen. Det skal ikke komme et ekstra pushvarsel etterpå.
+    return;
+  }
+  if (n.app === 'SMS') {
+    showPhonePopup(n);
+    // SMS kan fortsatt vises som vanlig varsel under, men anrop håndteres kun over.
+  }
+
+  // Hvis varselet har en tilknyttet chat-kanal, legg til melding der automatisk
+  if (n.channel && n.chatMsg) {
+    const ch = n.channel;
+    // Bruk konsistent farge/avatar basert på avsender
+    const authorColors = { 'Anders': '#f97316', 'Anders Bakke': '#f97316', 'Thomas': '#3b82f6', 'Lena': '#f59e0b', 'HR': '#8b5cf6', 'Petter': '#64748b', 'Morten': '#10b981' };
+    const msgColor = authorColors[n.title] || n.color;
+    const msgAvatar = n.title.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const msg = { id: 'notif-' + Date.now(), author: n.title, avatar: msgAvatar,
+      color: msgColor, time: formatCurrentGameTime(), text: n.text, requiresReply: false, shown: false };
+    if (!CHAT_MESSAGES[ch]) CHAT_MESSAGES[ch] = [];
+    const alreadyExists = CHAT_MESSAGES[ch].some(m => m.text === msg.text && m.author === msg.author);
+    if (alreadyExists) return;
+    markChatMessageShown(msg);
+    CHAT_MESSAGES[ch].push(msg);
+    const chatTabOpen = document.getElementById('panel-chat').classList.contains('active');
+    const userSees = chatTabOpen && state.currentChannel === ch;
+
+    if (userSees) {
+      renderChatMsg(msg);
+    } else {
+      const badge = document.getElementById(ch + '-badge');
+      const chatBadge = document.getElementById('chat-badge');
+      if (badge) { badge.classList.remove('hidden'); badge.textContent = (parseInt(badge.textContent)||0)+1; }
+      if (chatBadge) { chatBadge.classList.remove('hidden'); chatBadge.textContent = (parseInt(chatBadge.textContent)||0)+1; }
+    }
+  }
+
+
+
+  const container = document.getElementById('notifications');
+  const el = document.createElement('div');
+  el.className = 'notif';
+  el.innerHTML =
+    '<div class="notif-app"><div class="notif-app-dot" style="background:' + n.color + '"></div>' + n.app + '</div>' +
+    '<div class="notif-title">' + n.title + '</div>' +
+    '<div class="notif-text">' + n.text + '</div>';
+  el.addEventListener('click', () => {
+    el.classList.add('removing');
+    setTimeout(() => el.remove(), 300);
+    if (n.channel) { switchTab('chat'); setTimeout(() => switchChannel(n.channel), 50); }
+    if (n.emailId) {
+      switchTab('inbox');
+      setTimeout(() => {
+        const email = EMAILS.find(e => e.id === n.emailId);
+        if (email) {
+          buildEmailList();
+          const item = document.getElementById('email-item-' + email.id);
+          openEmail(email, item);
+        }
+      }, 50);
+    } else if (n.panel) {
+      switchTab(n.panel);
+    }
+    addScore(5);
+  });
+  container.appendChild(el);
+
+
+  setTimeout(() => {
+    if (el.parentNode) { el.classList.add('removing'); setTimeout(() => el.remove(), 300); }
+  }, 8000);
+}
+
+
+function showNotifBox(n) {
+  showNotification(n);
+}
+
+// ═══════════════════════════════════════
+// POENG
+// ═══════════════════════════════════════
+function addScore(pts) {
+  state.score = Math.max(0, state.score + pts);
+  document.getElementById('score-val').textContent = state.score;
+}
+
+// ═══════════════════════════════════════
+// AVSLUTT
+// ═══════════════════════════════════════
+function endGame(timeOut) {
+  state.gameOver = true;
+  clearInterval(state.timerInterval);
+
+  const scenario = SCENARIOS.find(scenarioDef => {
+    try {
+      return scenarioDef.condition(state);
+    } catch (err) {
+      console.warn('Scenario-regel feilet:', scenarioDef.id, err);
+      return false;
+    }
+  }) || SCENARIOS[SCENARIOS.length - 1];
+
+  let displayScenario = scenario;
+  if (timeOut && state.sprintFeatures.length === 0) {
+    displayScenario = {
+      id: 'timeout',
+      emoji: '⏰',
+      title: 'Møtet startet',
+      text: 'Du rakk ikke å levere sprinten. Thomas, Lena og Anders venter på deg i møterommet. Poengene dine er basert på hva du rakk å gjøre underveis.'
+    };
+  }
+
+  showEndScreenFallback(displayScenario, timeOut && displayScenario.id !== 'timeout');
+
+  try {
+    renderChoiceSummary(displayScenario, timeOut);
+  } catch (err) {
+    console.error('Kunne ikke vise oppsummering:', err);
+    const rows = document.getElementById('summary-rows');
+    if (rows) {
+      rows.innerHTML = '<div class="summary-section"><div class="summary-title">🏁 Oppsummering</div><div class="summary-text">Du endte med <strong>' + state.score + ' poeng</strong>. Sluttscenarioet ble valgt basert på sprintvalg, kapasitet, e-poster og Slack-svar.</div></div>';
+    }
+  }
+}
+
+function renderChoiceSummary(scenario, timeOut) {
+  const rows = document.getElementById('summary-rows');
+  const chosen = state.sprintFeatures
+    .map(fid => FEATURES.find(f => f.id === fid))
+    .filter(Boolean);
+
+  const plannedDays = chosen.reduce((sum, f) => sum + f.days, 0);
+  const realDays = state.sprintFeatures.reduce((sum, fid) => sum + (REAL_DAYS[fid] || 0), 0);
+  const sprintPoints = chosen.reduce((sum, f) => sum + f.points, 0);
+  const relevantEmailsRead = EMAILS.filter(e => e.relevant && state.readEmails.includes(e.id)).length;
+  const totalRelevantEmails = EMAILS.filter(e => e.relevant).length;
+
+  const scenarioReasons = {
+    hero: [
+      'Du prioriterte de mest akutte brukerproblemene: dokumentasjon i felt, stabil opplasting og minst én kritisk driftsfeil.',
+      'Sprinten holdt seg innenfor kapasiteten, og kommunikasjonen i Slack var god nok til at teamet kunne gjøre tydelige prioriteringer.'
+    ],
+    politician: [
+      'Du prioriterte demo-/ledelsesbehov, særlig PDF-eksport, men lot kritiske brukerproblemer stå igjen.',
+      'Sprinten så gjennomførbar ut på papiret, men risikoen flyttet seg til brukerne etterpå.'
+    ],
+    burnout: [
+      `Sprinten gikk over faktisk kapasitet: ca. ${realDays} dager mot 10 tilgjengelige dager.`,
+      'Du forsøkte å få inn for mye, som gjør at teamet betaler prisen selv om flere valg isolert sett kan være fornuftige.'
+    ],
+    nearMiss: [
+      'Varslingsmodulen ble ikke prioritert, og Kari sin tidlige advarsel ble ikke fanget opp.',
+      'Scenarioet handler om risikoen ved å overse svake, men viktige signaler.'
+    ],
+    symptomFixer: [
+      'Du valgte et synlig symptom, som push-varsler, uten å fikse den underliggende varslingsmodulen eller kritiske driftsfeil.',
+      'Det gir følelsen av fremdrift, men løser ikke nødvendigvis problemet brukerne faktisk opplever.'
+    ],
+    realistic: [
+      'Du fanget opp noe viktig, men ikke alt. Noen prioriteringer var gode, andre behov ble stående igjen.',
+      'Dette er fallback-scenariet når valgene ikke treffer en tydelig helt, burnout, politiker, nesten-ulykke eller symptomfikser.'
+    ]
+  };
+
+  const reasonList = timeOut && state.sprintFeatures.length === 0
+    ? ['Du rakk ikke å levere sprinten før tiden gikk ut.', 'Poengene kommer fra det du rakk å lese, svare på og følge opp underveis.']
+    : (scenarioReasons[scenario.id] || scenarioReasons.realistic);
+
+  const capacityClass = realDays > 10 ? 'summary-bad' : 'summary-good';
+  const capacityText = chosen.length
+    ? `Sprinten var estimert til <strong>${plannedDays} / 10 dager</strong>, og faktisk omfang var ca. <strong class="${capacityClass}">${realDays} / 10 dager</strong>.`
+    : 'Du leverte ingen saker i sprinten.';
+
+  rows.innerHTML = `
+    <div class="summary-section">
+      <div class="summary-title">🎯 Scenario</div>
+      <div class="summary-text"><strong>${escapeHTML(scenario.title)}</strong> ble valgt av de forhåndsdefinerte scenario-reglene i spillet.</div>
+      <div class="summary-text" style="margin-top:8px;">${reasonList.map(escapeHTML).join('<br>')}</div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-title">🏁 Poeng</div>
+      <div class="summary-text">Du endte med <strong>${state.score} poeng</strong>. Omtrent <strong>${sprintPoints}</strong> kom fra sprintvalgene og <strong>${state.chatScore}</strong> fra Slack-svar. Resten kommer fra e-poster, varsler, telefonvalg og andre små hendelser.</div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-title">📋 Kapasitet</div>
+      <div class="summary-text">${capacityText}</div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-title">📬 Informasjon fanget opp</div>
+      <div class="summary-text">Du leste <strong>${relevantEmailsRead} av ${totalRelevantEmails}</strong> relevante start-eposter. Dette påvirker både poeng og enkelte scenarioer.</div>
+    </div>
+  `;
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+</script>
+
+</body>
+</html>
