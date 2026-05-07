@@ -748,7 +748,7 @@ const EMAILS = [
     id: 'e24', from: 'Jira', fromRole: 'jira@skanska-digital.atlassian.net',
     subject: '[HMS-APP-389] Kommentar: Offline-modus', date: 'For 3 uker siden, 14:22',
     unread: false, old: true, points: 20, relevant: true,
-    body: 'Thomas Hagen kommenterte på ticket HMS-APP-389: Offline-modus\n\n"Har sett nærmere på dette. Offline-støtte er betydelig mer arbeid enn estimert — vi trenger en egen sync-logikk, konfliktshåndtering når to brukere redigerer samme skjema offline, og lokal database. Trenger en separat planleggingsøkt før vi setter dette i en sprint. Vil ikke at noen skal anta at dette er en liten ting."\n\nTicket er merket: Trenger avklaring'
+    body: 'Thomas Hagen kommenterte på ticket HMS-APP-389: Offline-modus\n\n"Har sett nærmere på dette."\n\nTicket er merket: Trenger avklaring'
   },
   {
     id: 'e19', from: 'LinkedIn', fromRole: 'notifications@linkedin.com',
@@ -977,7 +977,7 @@ const SCENARIOS = [
     emoji: '🔔',
     title: 'Symptomfikseren',
     text: 'Du valgte å gjøre varsler mer synlige, men rotårsaken ble stående. Teamet fikk flere ping, men brukerne fikk fortsatt ustabil opplasting, innlogging eller manglende dokumentasjon. Det føltes produktivt — helt til feltet ringte igjen.',
-    condition: s => s.features.includes('f8') && !s.sprintFeatures.includes('f4') && (!s.features.includes('f3') || !s.features.includes('f9'))
+    condition: s => s.sprintFeatures.includes('f8') && !s.sprintFeatures.includes('f4') && (!s.sprintFeatures.includes('f3') || !s.sprintFeatures.includes('f9'))
   },
   {
     id: 'realistic',
@@ -1124,14 +1124,15 @@ function markEmailRead(emailOrId) {
   const email = EMAILS.find(e => e.id === id);
   if (!email) return null;
 
-  const ticket = getTicketKey((email.subject || '') + ' ' + (email.body || ''));
+  const readKey = getEmailReadKey(email);
   rememberEmailRead(email);
 
-  // Marker også eventuelle duplikater med samme Jira-ticket som lest, slik at samme sak ikke lyser ulest igjen.
+  // Marker bare samme konkrete e-post/duplikat som lest. Senere kommentarer på samme Jira-ticket
+  // skal fortsatt kunne komme inn som nye og uleste.
   EMAILS.forEach(e => {
     const sameId = e.id === id;
-    const sameTicket = ticket && ((e.subject && e.subject.includes(ticket)) || (e.body && e.body.includes(ticket)));
-    if (sameId || sameTicket) {
+    const sameReadKey = readKey && getEmailReadKey(e) === readKey;
+    if (sameId || sameReadKey) {
       e.unread = false;
       rememberEmailRead(e);
     }
@@ -1172,8 +1173,12 @@ function getTicketKey(text) {
 
 function getEmailReadKey(email) {
   if (!email) return null;
+  const subject = String(email.subject || '').trim().toLowerCase();
   const ticket = getTicketKey((email.subject || '') + ' ' + (email.body || ''));
-  return ticket || email.id || email.subject || null;
+  // Lesestatus skal gjelde den konkrete e-posten, ikke alle senere kommentarer på samme Jira-ticket.
+  // Derfor kombineres ticketnummer med subject når ticket finnes.
+  if (ticket) return ticket + '|' + subject;
+  return email.id || subject || null;
 }
 
 function rememberEmailRead(email) {
@@ -1291,13 +1296,10 @@ function addEmailToInbox(emailData, options = {}) {
   const ticket = getTicketKey((incoming.subject || '') + ' ' + (incoming.body || ''));
   let existing = null;
 
-  if (ticket) {
-    existing = EMAILS.find(e =>
-      (e.subject && e.subject.includes(ticket)) ||
-      (e.body && e.body.includes(ticket))
-    );
-  }
-  if (!existing) existing = EMAILS.find(e => e.id === incoming.id || e.subject === incoming.subject);
+  // Finn eksisterende e-post kun når det er samme konkrete e-post.
+  // Tidligere matchet vi bare på Jira-ticket, som gjorde at senere kommentarer på samme sak
+  // oppdaterte en allerede lest mail og derfor ikke dukket opp som ny/ulest.
+  existing = EMAILS.find(e => e.id === incoming.id || e.subject === incoming.subject);
 
   const readAlready = wasEmailRead(existing) || wasEmailRead(incoming);
   let email;
@@ -1668,7 +1670,7 @@ function scheduleChatMessages() {
       const minutes = msgSchedule[msg.id] || 3;
       const delay = minutes * 60 * 1000;
       setTimeout(() => {
-        if (state.gameOver) return;
+        if (state.gameOver || msg.shown) return;
         markChatMessageShown(msg);
 
         const chatTabActive = document.getElementById('panel-chat').classList.contains('active');
@@ -1986,7 +1988,6 @@ function scheduleExtraMessages() {
       { text: 'Kan dere teste en fiks i morgen hvis vi får den inn?', points: 8, good: true }
     ] },
     { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Offline-modus er ikke “bare cache”. Det er sync, konflikter og lokal database.' },
-    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-389] Estimat oppdatert: Offline-modus', text: 'Oppdatert estimat: 15–20 utviklingsdager før test. Bør splittes opp før sprintplanlegging.' },
     { kind: 'slack', ch: 'general', author: 'Petter', avatar: 'PA', color: '#64748b', text: 'Kake er flyttet til 14:30. Viktig for kake, lite viktig for sprint.' },
     { kind: 'email', title: 'Direktør Nilsen', color: '#ef4444', subject: 'Fredag: hva kan vi faktisk vise?', text: 'Hvis PDF ikke er realistisk, trenger jeg et alternativ til demoen innen i morgen. Hellere ærlig status enn overraskelse fredag.' },
     { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Kari nevnte iPad-buggen, men hun sa også at varslene er mer alvorlige enn eksportknappen.' },
@@ -2026,9 +2027,46 @@ function scheduleExtraMessages() {
     { kind: 'call', title: 'Anders Bakke', color: '#10b981', text: 'Oppfølging fra byggeplassen' }
   ];
 
+  const lateGameEvents = [
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Jeg får færre innloggingsfeil etter fallback-token i test. Ikke ferdig, men lovende.' },
+    { kind: 'email', title: 'Drift', color: '#f59e0b', subject: 'Morgenrush: køen bygget seg opp igjen', text: 'Loggene viser ny kø rundt 08:15. Det var ikke full nedetid, men flere opplastinger måtte prøves på nytt.' },
+    { kind: 'slack', ch: 'general', author: 'Kari', avatar: 'KN', color: '#ef4444', text: 'Fra feltet: manglende varsler og ufullstendig dokumentasjon skaper mest usikkerhet akkurat nå.' },
+    { kind: 'email', title: 'GitHub', color: '#8b5cf6', subject: 'PR #247: reviewer-kommentar', text: 'Reviewer foreslår én ekstra test for store bilder på dårlig nett før merge.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Hvis vi får testet på én ekte rapport, vet vi fort om opplastingsfiksen holder.' },
+    { kind: 'email', title: 'Kari Nordahl', color: '#f59e0b', subject: 'Varsling: konkret eksempel', text: 'Eksempel fra forrige uke: rutineendringen ble synlig i systemet, men ingen på plassen fikk beskjed før dagen etter.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Jeg ville ikke pakket offline sammen med disse feilene. Det blir en egen teknisk risiko.' },
+    { kind: 'sms', title: 'Anders', color: '#10b981', text: 'Vi har nett på brakka, men ikke alltid ute på plassen. Viktigst er at ting ikke forsvinner.' },
+    { kind: 'email', title: 'Lena Dahl', color: '#f59e0b', subject: 'Brukertest: hva bør vi spørre om?', text: 'Jeg foreslår å teste om anleggslederne får lagret rapport med bilder og skjønner om den faktisk er sendt inn.' },
+    { kind: 'slack', ch: 'general', author: 'Morten', avatar: 'ML', color: '#10b981', text: 'Jeg tar Bergen-spørsmålene asynkront. Ikke bruk sprintmøtet på det hvis dere har mer akutte feil.' },
+    { kind: 'email', title: 'Direktør Nilsen', color: '#ef4444', subject: 'Styredemo: risiko', text: 'Jeg vil heller vise en stabil forbedring enn en halvferdig funksjon som kan feile under demo.' },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Jeg kan skrive om demo-historien til å handle om forbedret feltflyt, ikke nødvendigvis PDF.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-412] Kommentar: avgrensning', text: 'Innloggingsfeilen ser ut til å gjelde eldre app-versjoner. Nyere versjoner logger inn normalt.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Når dokumentasjonen er komplett, er det mindre viktig for oss hvordan eksporten ser ut akkurat denne uken.' },
+    { kind: 'email', title: 'Kantina', color: '#f59e0b', subject: 'Endring i møtemat', text: 'Møtematen er flyttet til kantinen. Dette krever ingen handling fra produktteamet.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Kapasitetsøkning for morgenrush ser ut som en liten, isolert jobb hvis vi holder oss til køhåndtering.' },
+    { kind: 'email', title: 'Drift', color: '#f59e0b', subject: 'Peak-belastning: mulig tiltak', text: 'Køhåndtering og litt ekstra kapasitet mellom 07:00 og 09:00 bør redusere feilen uten stor ombygging.' },
+    { kind: 'slack', ch: 'general', author: 'Petter', avatar: 'PA', color: '#64748b', text: 'Printeren er tom for toner igjen. Ikke produktkritisk, bare irriterende.' },
+    { kind: 'email', title: 'Lena Dahl', color: '#f59e0b', subject: 'Dashboard-redesign', text: 'Jeg parkerer dashboard-redesign til vi har bedre innsikt. Det er ikke knyttet til akutte feltproblemer.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Autosave kan være en trygg liten forbedring, men den løser ikke opplastingsfeilen alene.' },
+    { kind: 'email', title: 'Jira', color: '#f59e0b', subject: '[HMS-APP-4xx] Varsling: teknisk notat', text: 'Teknisk notat: problemet ser ut til å ligge i kvittering/leveringsstatus, ikke i selve push-kanalen.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Vi rekker en kort test i morgen tidlig hvis dere sender en build i dag.' },
+    { kind: 'call', title: 'Ukjent nummer', color: '#64748b', text: 'Kort salgssamtale om kontormøbler' },
+    { kind: 'email', title: 'Sikkerhetsvarsel', color: '#ef4444', subject: 'Automatisk påminnelse', text: 'Dette er en automatisk påminnelse om passordrotasjon neste måned.' },
+    { kind: 'slack', ch: 'dev', author: 'Lena', avatar: 'LD', color: '#f59e0b', text: 'Hvis vi må velge, ville jeg validert feltflyten før vi bruker tid på kosmetikk.' },
+    { kind: 'email', title: 'Kari Nordahl', color: '#f59e0b', subject: 'Feltprioritet før sprintmøtet', text: 'Min anbefaling før møtet: dokumentasjon først, deretter varsling. iPad-eksport kan vente hvis nødvendig.' },
+    { kind: 'slack', ch: 'general', author: 'HR', avatar: 'HR', color: '#8b5cf6', text: 'Minner om at kapasitetsrapporten ikke trenger detaljer per ticket.' },
+    { kind: 'email', title: 'GitHub', color: '#8b5cf6', subject: 'PR #247: klar etter ekstra test', text: 'Ekstra test for stor JPEG på tregt nett passerer. PR-en er fortsatt avgrenset til opplasting.' },
+    { kind: 'slack', ch: 'dev', author: 'Thomas', avatar: 'TH', color: '#3b82f6', text: 'Jeg anbefaler å holde sprinten liten nok til at vi faktisk får testet før torsdag.' },
+    { kind: 'email', title: 'Direktør Nilsen', color: '#ef4444', subject: 'Før sprintmøtet', text: 'Gi meg en ærlig vurdering etter planleggingen. Jeg tåler at PDF flyttes hvis begrunnelsen er god.' },
+    { kind: 'slack', ch: 'dm', author: 'Anders Bakke', avatar: 'AB', color: '#f97316', text: 'Takk for at dere ser på dette. Jeg trenger mest forutsigbarhet før Arbeidstilsynet kommer.' },
+    { kind: 'email', title: 'Facilities', color: '#f59e0b', subject: 'Heisen er i drift igjen', text: 'Heisen i bygget er i drift igjen. Ingen tiltak nødvendig.' }
+  ];
+  const eventPool = extraEvents.concat(lateGameEvents);
+
   for (let t = 15; t < GAME_DURATION; t += 15) {
     const idx = Math.floor(t / 15) - 1;
-    const item = extraEvents[idx % extraEvents.length];
+    const item = eventPool[idx];
+    if (!item) return;
     setTimeout(() => {
       if (state.gameOver) return;
       state.extraMessageSeq++;
@@ -2047,15 +2085,18 @@ function scheduleExtraMessages() {
         };
         if (!CHAT_MESSAGES[item.ch]) CHAT_MESSAGES[item.ch] = [];
         const alreadyExists = CHAT_MESSAGES[item.ch].some(m => m.text === msg.text && m.author === msg.author);
-        if (!alreadyExists) {
-          markChatMessageShown(msg);
-          CHAT_MESSAGES[item.ch].push(msg);
+        if (alreadyExists) {
+          // Ikke vis popup for en Slack-melding som allerede finnes i historikken.
+          // Dette hindrer at gamle chatmeldinger senere dukker opp som nye varsler.
+          return;
         }
+        markChatMessageShown(msg);
+        CHAT_MESSAGES[item.ch].push(msg);
 
         const chatTabActive = document.getElementById('panel-chat').classList.contains('active');
         const userSeesThisMsg = chatTabActive && state.currentChannel === item.ch;
         if (userSeesThisMsg) {
-          if (!alreadyExists) renderChatMsg(msg);
+          renderChatMsg(msg);
         } else {
           const chNames = { dev: '#dev-teamet', general: '#general', dm: 'Anders' };
           showNotification({ app: 'Slack', color: item.color, title: chNames[item.ch] || item.ch, text: item.author + ': ' + item.text, channel: item.ch });
@@ -2078,6 +2119,9 @@ function scheduleExtraMessages() {
       }
 
       if (item.kind === 'email') {
+        const eventKey = 'email|' + item.title + '|' + item.subject;
+        if (hasEmailBeenNotified(eventKey)) return;
+        rememberEmailNotified(eventKey);
         const n = {
           app: 'Email',
           color: item.color,
