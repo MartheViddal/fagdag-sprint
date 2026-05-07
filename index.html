@@ -434,7 +434,7 @@ body {
   display: none; position: fixed; inset: 0; z-index: 9000;
   background: var(--bg); overflow-y: auto;
   flex-direction: column; align-items: center;
-  justify-content: flex-start; padding: 40px 20px;
+  justify-content: flex-start; padding: 40px 20px 90px;
 }
 #end-screen.show { display: flex; animation: fadeIn 0.5s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -453,7 +453,7 @@ body {
 #choice-summary {
   max-width: 760px; width: 100%;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; overflow: hidden; margin-bottom: 24px;
+  border-radius: 16px; overflow: visible; margin-bottom: 48px;
 }
 .summary-header {
   padding: 14px 20px; background: var(--surface2);
@@ -496,7 +496,7 @@ body {
   <div class="rules">
     <div class="rule"><span>📋</span> Du må planlegge og levere sprinten før tiden går ut</div>
     <div class="rule"><span>⏱️</span> Du har 20 minutter</div>
-    <div class="rule"><span>🏆</span> Du får poeng basert på valgene du tar underveis — og ser hele teamets score når du er ferdig</div>
+    <div class="rule"><span>🏆</span> Du får poeng basert på valgene du tar underveis — og får et sluttscenario basert på valgene dine</div>
   </div>
   <input id="name-input" type="text" placeholder="Hva heter du?" autocomplete="off" />
   <button id="start-btn">Start dagen →</button>
@@ -890,7 +890,7 @@ const FEATURES = [
   { id: 'f7', name: 'Redesign dashboard', desc: 'Ny visuell profil på hjemskjerm', days: 3, tag: 'mid', tagLabel: '3d', points: 5 },
   { id: 'f8', name: 'Push-varsler', desc: 'Varsle om nye avvik og frister', days: 3, tag: 'mid', tagLabel: '3d', points: 8 },
   // Skjulte Jira-saker som dukker opp underveis via varsel/e-post.
-  { id: 'f9', name: 'Fiks innloggingsfeil etter deploy', desc: 'Eldre app-versjoner får ikke logget inn', days: 2, tag: 'high', tagLabel: '2d', points: 35, hidden: true },
+  { id: 'f9', name: 'Fiks innloggingsfeil etter deploy', desc: 'Eldre app-versjoner får ikke logget inn', days: 2, tag: 'mid', tagLabel: '2d', points: 35, hidden: true },
   { id: 'f10', name: 'Fiks eksporter-knapp på iPad', desc: 'Eksporter-knappen mangler i rapport-visning', days: 1, tag: 'mid', tagLabel: '1d', points: 12, hidden: true },
   { id: 'f11', name: 'Øk serverkapasitet ved peak-belastning', desc: 'Kritisk feil når mange bruker appen samtidig', days: 2, tag: 'high', tagLabel: '2d', points: 30, hidden: true }
 ];
@@ -914,7 +914,6 @@ const NOTIFICATIONS = [
   { time: 6*60,   app: 'LinkedIn', color: '#3b82f6', title: 'Ny tilkobling',  text: 'Thomas Hagen godtok kontaktforespørselen din', panel: null },
   { time: 6.5*60, app: 'Slack',   color: '#f59e0b', title: 'Morten',       text: 'Hei! Har sendt mail om Bergen-prosjektene', channel: 'general', chatMsg: true },
   { time: 7*60,   app: 'Slack',   color: '#f59e0b', title: '#general',       text: 'Lena: Har noen sett på iPad-ticketen? Kari er frustrert.', channel: 'general' },
-  { time: 7.5*60, app: 'SMS',     color: '#ef4444', title: 'Ukjent nummer',  text: 'Sara, dette er kona til Anders. Han er på legevakten. Ikke alvorlig, men han klarer ikke jobb i morgen.', channel: null },
   { time: 8*60, app: 'Email', color: '#f59e0b', title: 'GitHub', text: 'PR #247: Fix upload timeout', panel: 'inbox', emailSubject: '[hms-app] PR #247: Fix upload timeout for JPEG', emailPoints: 15, emailRelevant: true, emailBody: 'Thomas Hagen opened pull request #247: Fix upload timeout for large JPEG files.\n\nThis PR fixes the memory issue in the upload module. Users experiencing timeouts when uploading images larger than 5MB should no longer be affected.\n\nReview requested: Sara Bakke' },
 
   // 9-13 min
@@ -1022,6 +1021,22 @@ let state = {
 // ═══════════════════════════════════════
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('name-input').addEventListener('keydown', e => { if(e.key === 'Enter') startGame(); });
+
+function getPlayerNameForText() {
+  return (state.playerName && state.playerName.trim()) || 'Spiller';
+}
+
+function personalizeText(value) {
+  const name = getPlayerNameForText();
+  return String(value || '')
+    .replace(/Sara Bakke/g, name)
+    .replace(/@sara\b/gi, '@' + name)
+    .replace(/\bSara\b/g, name);
+}
+
+function escapePersonalized(value) {
+  return escapeHTML(personalizeText(value));
+}
 
 function startGame() {
   const name = document.getElementById('name-input').value.trim() || 'Spiller';
@@ -1142,10 +1157,10 @@ function upsertEmailListItem(email) {
   item.innerHTML =
     '<div class="email-sender">' +
       (email.unread ? '<div class="unread-dot" style="flex-shrink:0;"></div>' : '') +
-      '<span class="email-name">' + (email.from || '') + '</span>' +
-      '<span class="email-date" style="color:var(--accent);">' + (email.date || 'Nå') + '</span>' +
+      '<span class="email-name">' + escapePersonalized(email.from || '') + '</span>' +
+      '<span class="email-date" style="color:var(--accent);">' + escapePersonalized(email.date || 'Nå') + '</span>' +
     '</div>' +
-    '<div class="email-subject" style="color:var(--text);">' + (email.subject || '') + '</div>';
+    '<div class="email-subject" style="color:var(--text);">' + escapePersonalized(email.subject || '') + '</div>';
   item.addEventListener('click', () => openEmail(email, item));
   list.insertBefore(item, list.firstChild);
 }
@@ -1361,10 +1376,10 @@ function buildEmailList() {
     item.innerHTML = `
       <div class="email-sender">
         ${email.unread ? '<div class="unread-dot" style="flex-shrink:0;"></div>' : ''}
-        <span class="email-name">${email.from}</span>
-        <span class="email-date">${email.date}</span>
+        <span class="email-name">${escapePersonalized(email.from)}</span>
+        <span class="email-date">${escapePersonalized(email.date)}</span>
       </div>
-      <div class="email-subject">${email.subject}</div>
+      <div class="email-subject">${escapePersonalized(email.subject)}</div>
     `;
     item.addEventListener('click', () => openEmail(email, item));
     list.appendChild(item);
@@ -1392,17 +1407,17 @@ function openEmail(email, item) {
   meta.id = 'email-meta';
   const subj = document.createElement('div');
   subj.className = 'subject';
-  subj.textContent = canonicalEmail.subject || '';
+  subj.textContent = personalizeText(canonicalEmail.subject || '');
   const from = document.createElement('div');
   from.className = 'from';
-  from.textContent = (canonicalEmail.from || '') + ' - ' + (canonicalEmail.fromRole || '') + ' - ' + (canonicalEmail.date || '');
+  from.textContent = personalizeText((canonicalEmail.from || '') + ' - ' + (canonicalEmail.fromRole || '') + ' - ' + (canonicalEmail.date || ''));
   meta.appendChild(subj);
   meta.appendChild(from);
   pane.appendChild(meta);
 
   const body = document.createElement('div');
   body.id = 'email-body-text';
-  body.innerHTML = (canonicalEmail.body || '').replace(/\n/g, '<br>');
+  body.innerHTML = escapePersonalized(canonicalEmail.body || '').replace(/\n/g, '<br>');
   pane.appendChild(body);
 
   updateInboxBadge();
@@ -1460,16 +1475,16 @@ function renderChatMsg(msg) {
     const chosen = msg.replies ? msg.replies[state.chatReplies[msg.id]] : null;
     if (chosen) {
       const shownAnswer = chosen.text;
-      replyNote = '<div class="reply-note" style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;">Du svarte: \"' + shownAnswer + '\"</div>';
+      replyNote = '<div class="reply-note" style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;">Du svarte: \"' + escapePersonalized(shownAnswer) + '\"</div>';
     } else {
       replyNote = '<div class="reply-note" style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;">Ignorert</div>';
     }
   }
 
-  div.innerHTML = '<div class="chat-avatar" style="background:' + msg.color + '22;color:' + msg.color + ';">' + msg.avatar + '</div>' +
+  div.innerHTML = '<div class="chat-avatar" style="background:' + msg.color + '22;color:' + msg.color + ';">' + escapeHTML(msg.avatar) + '</div>' +
     '<div class="chat-content">' +
-    '<div class="chat-name" style="color:' + msg.color + ';">' + msg.author + ' <span class="chat-time">' + msg.time + '</span></div>' +
-    '<div class="chat-text">' + msg.text + '</div>' +
+    '<div class="chat-name" style="color:' + msg.color + ';">' + escapePersonalized(msg.author) + ' <span class="chat-time">' + escapeHTML(msg.time) + '</span></div>' +
+    '<div class="chat-text">' + escapePersonalized(msg.text) + '</div>' +
     replyNote +
     '</div>';
 
@@ -1520,10 +1535,10 @@ function updateQuickReplies() {
     context.className = 'quick-reply-context';
     const author = document.createElement('div');
     author.className = 'qr-author';
-    author.textContent = msg.author + ' spør:';
+    author.textContent = personalizeText(msg.author + ' spør:');
     const text = document.createElement('div');
     text.className = 'qr-text';
-    text.textContent = msg.text;
+    text.textContent = personalizeText(msg.text);
     context.appendChild(author);
     context.appendChild(text);
     panel.appendChild(context);
@@ -1534,8 +1549,8 @@ function updateQuickReplies() {
     (msg.replies || []).forEach((r, i) => {
       const btn = document.createElement('button');
       btn.className = 'quick-reply';
-      btn.textContent = r.text;
-      btn.title = r.text;
+      btn.textContent = personalizeText(r.text);
+      btn.title = personalizeText(r.text);
       btn.addEventListener('click', () => replyChat(msg.id, i));
       actions.appendChild(btn);
     });
@@ -1588,7 +1603,7 @@ function replyChat(msgId, replyIndex) {
       const note = document.createElement('div');
       note.className = 'reply-note';
       note.style.cssText = 'margin-top:5px;font-size:11px;color:var(--muted);font-style:italic;';
-      note.textContent = 'Du svarte: "' + reply.text + '"';
+      note.textContent = 'Du svarte: "' + personalizeText(reply.text) + '"';
       content.appendChild(note);
     }
   }
@@ -1868,8 +1883,8 @@ function showEndScreenFallback(scenario, timeOut) {
   const text = document.getElementById('sc-text');
   const score = document.getElementById('sc-score');
   if (emoji) emoji.textContent = scenario.emoji;
-  if (title) title.textContent = scenario.title;
-  if (text) text.textContent = (timeOut ? '⏰ Tiden gikk ut før du leverte sprinten. ' : '') + scenario.text;
+  if (title) title.textContent = personalizeText(scenario.title);
+  if (text) text.textContent = personalizeText((timeOut ? '⏰ Tiden gikk ut før du leverte sprinten. ' : '') + scenario.text);
   if (score) score.textContent = state.score;
 }
 
@@ -2153,8 +2168,8 @@ function showPhonePopup(n) {
   const callText = n.text || 'Det er et kort avbrudd som ikke gir ny sprintinformasjon.';
 
   icon.textContent = isCall ? '📞' : '💬';
-  caller.textContent = n.title || (isCall ? 'Innkommende anrop' : 'SMS');
-  subtitle.textContent = isCall ? 'Innkommende anrop' : callText;
+  caller.textContent = personalizeText(n.title || (isCall ? 'Innkommende anrop' : 'SMS'));
+  subtitle.textContent = personalizeText(isCall ? 'Innkommende anrop' : callText);
 
   screen.className = isCall ? '' : 'sms-mode';
   if (isCall) screen.style.animation = 'phone-ring 0.4s ease-in-out infinite alternate';
@@ -2164,9 +2179,10 @@ function showPhonePopup(n) {
 
   if (isCall) {
     const answerBtn = document.createElement('button');
-    answerBtn.className = 'phone-btn choice answer';
-    answerBtn.textContent = 'Ta telefonen';
+    answerBtn.className = 'phone-btn answer';
+    answerBtn.textContent = '✓';
     answerBtn.title = 'Ta telefonen';
+    answerBtn.setAttribute('aria-label', 'Ta telefonen');
     answerBtn.addEventListener('click', () => {
       if (!n._answered) {
         n._answered = true;
@@ -2174,8 +2190,8 @@ function showPhonePopup(n) {
       }
       screen.style.animation = 'none';
       icon.textContent = '💬';
-      caller.textContent = n.title || 'Telefon';
-      subtitle.innerHTML = '<strong>Du tok telefonen.</strong><br><br>' + escapeHTML(callText);
+      caller.textContent = personalizeText(n.title || 'Telefon');
+      subtitle.innerHTML = '<strong>Du tok telefonen.</strong><br><br>' + escapePersonalized(callText);
       actions.innerHTML = '';
       const doneBtn = document.createElement('button');
       doneBtn.className = 'chat-reply-btn';
@@ -2186,9 +2202,10 @@ function showPhonePopup(n) {
     });
 
     const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'phone-btn choice dismiss';
-    dismissBtn.textContent = 'Ikke ta den';
+    dismissBtn.className = 'phone-btn dismiss';
+    dismissBtn.textContent = '×';
     dismissBtn.title = 'Ikke ta telefonen';
+    dismissBtn.setAttribute('aria-label', 'Ikke ta telefonen');
     dismissBtn.addEventListener('click', () => {
       closePhonePopup();
     });
@@ -2266,9 +2283,9 @@ function showNotification(n) {
   const el = document.createElement('div');
   el.className = 'notif';
   el.innerHTML =
-    '<div class="notif-app"><div class="notif-app-dot" style="background:' + n.color + '"></div>' + n.app + '</div>' +
-    '<div class="notif-title">' + n.title + '</div>' +
-    '<div class="notif-text">' + n.text + '</div>';
+    '<div class="notif-app"><div class="notif-app-dot" style="background:' + n.color + '"></div>' + escapeHTML(n.app) + '</div>' +
+    '<div class="notif-title">' + escapePersonalized(n.title) + '</div>' +
+    '<div class="notif-text">' + escapePersonalized(n.text) + '</div>';
   el.addEventListener('click', () => {
     el.classList.add('removing');
     setTimeout(() => el.remove(), 300);
@@ -2382,8 +2399,7 @@ function renderChoiceSummary(scenario, timeOut) {
       'Det gir følelsen av fremdrift, men løser ikke nødvendigvis problemet brukerne faktisk opplever.'
     ],
     realistic: [
-      'Du fanget opp noe viktig, men ikke alt. Noen prioriteringer var gode, andre behov ble stående igjen.',
-      'Dette er fallback-scenariet når valgene ikke treffer en tydelig helt, burnout, politiker, nesten-ulykke eller symptomfikser.'
+      'Du fanget opp noe viktig, men ikke alt. Noen prioriteringer var gode, andre behov ble stående igjen.'
     ]
   };
 
